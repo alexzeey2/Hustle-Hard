@@ -5,6 +5,7 @@ interface GameStateType {
   money: number;
   health: number;
   dayCount: number;
+  totalEarned: number;
   salary: { timeLeft: number; unlocked: boolean };
   skill: { purchased: boolean; cost: number; income: number; boostLevel: number; boostCount: number; lastBoostTime: number };
   miniBusiness: { purchased: boolean; cost: number; income: number; boostLevel: number; boostCount: number; lastBoostTime: number };
@@ -82,6 +83,7 @@ export default function MoneyGameSim() {
     money: 0,
     health: 100,
     dayCount: 0,
+    totalEarned: 0,
     salary: { timeLeft: 60, unlocked: true },
     skill: { purchased: false, cost: 150000, income: 20000, boostLevel: 0, boostCount: 0, lastBoostTime: -20 },
     miniBusiness: { purchased: false, cost: 500000, income: 65000, boostLevel: 0, boostCount: 0, lastBoostTime: -20 },
@@ -133,7 +135,7 @@ export default function MoneyGameSim() {
         const newTime = t + 1;
         
         setGameState(prev => {
-          if (prev.gamePaused) return prev;
+          if (prev.gamePaused || prev.gameOver) return prev;
           
           const newState = { ...prev };
           
@@ -177,6 +179,7 @@ export default function MoneyGameSim() {
               
               newState.money = currentBalance;
               newState.lifestylePurchases = finalPurchases;
+              newState.totalEarned = prev.totalEarned + totalIncome;
               
               if (finalMaintenanceCost > 0) {
                 newState.expensesDebited = true;
@@ -187,22 +190,21 @@ export default function MoneyGameSim() {
               
               const newHealth = Math.max(0, prev.health - 5);
               newState.showHealthWarning = newHealth <= 60;
+              newState.health = newHealth;
+              newState.dayCount = prev.dayCount + 1;
               
               if (newHealth <= 50) {
                 newState.gameOver = true;
                 newState.finalStats = {
                   monthsSurvived: newState.dayCount,
                   finalBalance: newState.money,
-                  totalEarned: 0,
+                  totalEarned: newState.totalEarned,
                   achievementsUnlocked: newState.achievements.length,
                   maxHealth: 100,
                   finalHealth: newHealth
                 };
                 return newState;
               }
-              
-              newState.health = newHealth;
-              newState.dayCount = prev.dayCount + 1;
               newState.salary = { ...newState.salary, timeLeft: 60 };
               
               if (prev.investment.countdownMonths > 0) {
@@ -437,6 +439,7 @@ export default function MoneyGameSim() {
         money: 0,
         health: 100,
         dayCount: 0,
+        totalEarned: 0,
         salary: { timeLeft: 60, unlocked: true },
         skill: { purchased: false, cost: 150000, income: 20000, boostLevel: 0, boostCount: 0, lastBoostTime: -20 },
         miniBusiness: { purchased: false, cost: 500000, income: 65000, boostLevel: 0, boostCount: 0, lastBoostTime: -20 },
@@ -501,6 +504,10 @@ export default function MoneyGameSim() {
               <div className="flex justify-between items-center">
                 <span className="text-slate-400 text-xs">Final Balance</span>
                 <span className="text-emerald-400 font-bold text-sm" data-testid="text-final-balance">{formatCurrency(stats.finalBalance)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400 text-xs">Total Earned</span>
+                <span className="text-blue-400 font-bold text-sm" data-testid="text-total-earned">{formatCurrency(stats.totalEarned)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-400 text-xs">Achievements</span>
