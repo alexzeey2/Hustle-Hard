@@ -260,7 +260,7 @@ export default function MoneyGameSim() {
   }, []);
 
   const formatCurrency = (amount: number) => {
-    return '\u20A6' + amount.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    return '₦' + amount.toLocaleString('en-US', { maximumFractionDigits: 0 });
   };
 
   const formatGameTime = (months: number) => {
@@ -832,7 +832,7 @@ export default function MoneyGameSim() {
                 }`}
                 data-testid="button-invest-business"
               >
-                {businessCooldown > 0 ? `Please Wait (${businessCooldown}s)` : 'Invest \u20A6500K'}
+                {businessCooldown > 0 ? `Please Wait (${businessCooldown}s)` : 'Invest ₦500K'}
               </button>
             </>
           )}
@@ -849,7 +849,7 @@ export default function MoneyGameSim() {
               <span className="text-xs text-slate-400 ml-2">(15% return)</span></>
             )}
           </p>
-          <p className="text-slate-400 text-xs mb-2">Every Year (12 months) - Min. investment: \u20A610M</p>
+          <p className="text-slate-400 text-xs mb-2">Every Year (12 months) - Min. investment: ₦10M</p>
           {gameState.investment.totalInvested > 0 && (
             <p className="text-purple-300 text-xs mb-4">
               Invested: {formatCurrency(gameState.investment.totalInvested)} - Matures in {gameState.investment.countdownMonths} {gameState.investment.countdownMonths === 1 ? 'month' : 'months'}
@@ -879,7 +879,7 @@ export default function MoneyGameSim() {
             className="w-full bg-slate-700 hover:bg-slate-600 disabled:bg-slate-700/50 disabled:text-slate-600 text-slate-100 py-3 rounded-lg font-medium transition text-sm border border-slate-600"
             data-testid="button-invest-deposit"
           >
-            Invest \u20A610M
+            Invest ₦10M
           </button>
         </div>
 
@@ -887,7 +887,7 @@ export default function MoneyGameSim() {
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
             <div className="bg-slate-800 rounded-lg p-6 max-w-sm w-full border border-slate-700">
               <h3 className="text-xl font-bold mb-4">Boost Skill Income</h3>
-              <p className="text-slate-400 text-sm mb-4">Increase your skill income by \u20A620,000/month</p>
+              <p className="text-slate-400 text-sm mb-4">Increase your skill income by ₦20,000/month</p>
               <div className="mb-4">
                 <p className="text-slate-300 text-sm">Current Level: {gameState.skill.boostLevel}</p>
                 <p className="text-slate-300 text-sm">Current Income: {formatCurrency(gameState.skill.income)}</p>
@@ -920,7 +920,7 @@ export default function MoneyGameSim() {
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
             <div className="bg-slate-800 rounded-lg p-6 max-w-sm w-full border border-slate-700">
               <h3 className="text-xl font-bold mb-4">Boost Business Income</h3>
-              <p className="text-slate-400 text-sm mb-4">Increase your business income by \u20A665,000/month</p>
+              <p className="text-slate-400 text-sm mb-4">Increase your business income by ₦65,000/month</p>
               <div className="mb-4">
                 <p className="text-slate-300 text-sm">Current Level: {gameState.miniBusiness.boostLevel}</p>
                 <p className="text-slate-300 text-sm">Current Income: {formatCurrency(gameState.miniBusiness.income)}</p>
@@ -1004,14 +1004,14 @@ export default function MoneyGameSim() {
     if (gameState.miniBusiness.purchased) totalMonthlyIncome += gameState.miniBusiness.income;
     
     const achievementMilestones = [
-      { amount: 500000, label: '\u20A6500K', reward: 25000 },
-      { amount: 5000000, label: '\u20A65M', reward: 250000 },
-      { amount: 50000000, label: '\u20A650M', reward: 2500000 },
-      { amount: 500000000, label: '\u20A6500M', reward: 25000000 },
-      { amount: 5000000000, label: '\u20A65B', reward: 250000000 },
-      { amount: 50000000000, label: '\u20A650B', reward: 2500000000 },
-      { amount: 500000000000, label: '\u20A6500B', reward: 25000000000 },
-      { amount: 5000000000000, label: '\u20A65T', reward: 250000000000 }
+      { amount: 500000, label: '₦500K', reward: 25000 },
+      { amount: 5000000, label: '₦5M', reward: 250000 },
+      { amount: 50000000, label: '₦50M', reward: 2500000 },
+      { amount: 500000000, label: '₦500M', reward: 25000000 },
+      { amount: 5000000000, label: '₦5B', reward: 250000000 },
+      { amount: 50000000000, label: '₦50B', reward: 2500000000 },
+      { amount: 500000000000, label: '₦500B', reward: 25000000000 },
+      { amount: 5000000000000, label: '₦5T', reward: 250000000000 }
     ];
 
     return (
@@ -1345,11 +1345,11 @@ export default function MoneyGameSim() {
             <div className="bg-slate-900/50 rounded-lg p-3 mb-3 border border-slate-700">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-slate-300 text-sm">You earn</span>
-                <span className="text-emerald-400 font-bold text-lg">\u20A6200,000</span>
+                <span className="text-emerald-400 font-bold text-lg">₦500,000</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-300 text-sm">Your friend gets</span>
-                <span className="text-blue-400 font-bold text-lg">\u20A6100,000</span>
+                <span className="text-blue-400 font-bold text-lg">₦100,000</span>
               </div>
             </div>
             
@@ -1371,7 +1371,7 @@ export default function MoneyGameSim() {
                   <p className="text-slate-500 text-xs">Stay updated with us</p>
                 </div>
               </div>
-              <span className="text-emerald-400 font-bold text-sm">+\u20A650K</span>
+              <span className="text-emerald-400 font-bold text-sm">+₦50K</span>
             </div>
             
             <button
@@ -1401,7 +1401,7 @@ export default function MoneyGameSim() {
                   <p className="text-slate-500 text-xs">Post a screenshot</p>
                 </div>
               </div>
-              <span className="text-emerald-400 font-bold text-sm">+\u20A650K</span>
+              <span className="text-emerald-400 font-bold text-sm">+₦50K</span>
             </div>
             
             <button
