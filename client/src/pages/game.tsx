@@ -47,6 +47,9 @@ interface GameStateType {
   reversalTime: number;
   showHealthWarning?: boolean;
   tasksCompleted: { facebook: boolean; screenshot: boolean };
+  showAllAchievementsComplete: boolean;
+  allAchievementsShown: boolean;
+  showGameWon: boolean;
 }
 
 interface LifestylePurchase {
@@ -122,7 +125,10 @@ export default function MoneyGameSim() {
     showReversalNotification: false,
     reversedItems: [],
     reversalTime: 0,
-    tasksCompleted: { facebook: false, screenshot: false }
+    tasksCompleted: { facebook: false, screenshot: false },
+    showAllAchievementsComplete: false,
+    allAchievementsShown: false,
+    showGameWon: false
   });
 
   const [currentPage, setCurrentPage] = useState('home');
@@ -259,6 +265,40 @@ export default function MoneyGameSim() {
     return () => clearInterval(interval);
   }, []);
 
+  // Check for all achievements complete and game won
+  useEffect(() => {
+    const allItemIds = [
+      'bungalow', 'duplex', 'mansion', 'penthouse',
+      'toyota', 'lexus', 'bmw', 'mercedes', 'bentley',
+      'speedboat', 'yacht_small', 'yacht_luxury', 'mega_yacht',
+      'light_jet', 'midsize_jet', 'heavy_jet', 'airliner'
+    ];
+    
+    const allAchievementsComplete = gameState.achievements.length >= 8;
+    const allItemsOwned = allItemIds.every(id => 
+      gameState.lifestylePurchases.some(p => p.id === id)
+    );
+    
+    // Show all achievements complete modal (only once)
+    if (allAchievementsComplete && !gameState.allAchievementsShown && !gameState.showGameWon) {
+      setGameState(prev => ({
+        ...prev,
+        showAllAchievementsComplete: true,
+        allAchievementsShown: true
+      }));
+    }
+    
+    // Show game won screen when both conditions are met
+    if (allAchievementsComplete && allItemsOwned && !gameState.showGameWon) {
+      setGameState(prev => ({
+        ...prev,
+        showGameWon: true,
+        showAllAchievementsComplete: false,
+        gamePaused: true
+      }));
+    }
+  }, [gameState.achievements.length, gameState.lifestylePurchases.length, gameState.allAchievementsShown, gameState.showGameWon]);
+
   const formatCurrency = (amount: number) => {
     return '₦' + amount.toLocaleString('en-US', { maximumFractionDigits: 0 });
   };
@@ -278,6 +318,21 @@ export default function MoneyGameSim() {
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  const ALL_LIFESTYLE_ITEM_IDS = [
+    'bungalow', 'duplex', 'mansion', 'penthouse',
+    'toyota', 'lexus', 'bmw', 'mercedes', 'bentley',
+    'speedboat', 'yacht_small', 'yacht_luxury', 'mega_yacht',
+    'light_jet', 'midsize_jet', 'heavy_jet', 'airliner'
+  ];
+  
+  const TOTAL_ACHIEVEMENTS = 8;
+  
+  const hasAllAchievements = gameState.achievements.length >= TOTAL_ACHIEVEMENTS;
+  const hasAllItems = ALL_LIFESTYLE_ITEM_IDS.every(id => 
+    gameState.lifestylePurchases.some(p => p.id === id)
+  );
+  const hasWonGame = hasAllAchievements && hasAllItems;
 
   const calculateMaintenanceCosts = () => {
     return gameState.lifestylePurchases.reduce((total, purchase) => total + (purchase.maintenance || 0), 0);
@@ -478,7 +533,10 @@ export default function MoneyGameSim() {
         showReversalNotification: false,
         reversedItems: [],
         reversalTime: 0,
-        tasksCompleted: { facebook: false, screenshot: false }
+        tasksCompleted: { facebook: false, screenshot: false },
+        showAllAchievementsComplete: false,
+        allAchievementsShown: false,
+        showGameWon: false
       });
       setCurrentPage('home');
     };
@@ -1430,8 +1488,302 @@ export default function MoneyGameSim() {
           to { transform: translateY(0); opacity: 1; }
         }
         .animate-slide-up { animation: slide-up 0.5s ease-out; }
+        
+        @keyframes slide-down {
+          from { transform: translateY(-100%); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-down { animation: slide-down 0.5s ease-out; }
+        
+        @keyframes confetti-fall {
+          0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        .confetti-piece {
+          position: absolute;
+          width: 10px;
+          height: 10px;
+          top: 0;
+          animation: confetti-fall 3s ease-out forwards;
+        }
+        
+        @keyframes sparkle {
+          0%, 100% { opacity: 0; transform: scale(0); }
+          50% { opacity: 1; transform: scale(1); }
+        }
+        .sparkle { animation: sparkle 0.6s ease-in-out infinite; }
+        
+        @keyframes pulse-glow {
+          0%, 100% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.4); }
+          50% { box-shadow: 0 0 40px rgba(168, 85, 247, 0.8); }
+        }
+        .pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
       `}</style>
       
+      {/* Achievement Notification with Confetti */}
+      {gameState.showAchievementNotification && (
+        <div className="fixed top-0 left-0 right-0 z-[60] pointer-events-none overflow-hidden">
+          {/* Confetti pieces */}
+          {[...Array(30)].map((_, i) => (
+            <div
+              key={i}
+              className="confetti-piece"
+              style={{
+                left: `${Math.random() * 100}%`,
+                backgroundColor: ['#a855f7', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'][Math.floor(Math.random() * 6)],
+                animationDelay: `${Math.random() * 0.5}s`,
+                borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+              }}
+            />
+          ))}
+          
+          {/* Notification Banner */}
+          <div className="animate-slide-down p-4 pointer-events-auto">
+            <div 
+              className="bg-gradient-to-r from-purple-900/95 via-slate-900/95 to-purple-900/95 backdrop-blur-sm rounded-xl p-4 max-w-md mx-auto border border-purple-500/50 shadow-2xl pulse-glow"
+              onClick={() => {
+                setGameState(prev => ({ ...prev, showAchievementNotification: false }));
+                setCurrentPage('portfolio');
+              }}
+              data-testid="notification-achievement"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-gradient-to-br from-yellow-400 to-amber-600 p-2 rounded-full">
+                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm4.707 5.707a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L8.414 11H13a1 1 0 100-2H8.414l1.293-1.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-amber-300 font-bold text-sm">Achievement Unlocked!</p>
+                  <p className="text-slate-200 text-xs">
+                    Monthly income reached <span className="text-emerald-400 font-bold">{formatCurrency(gameState.achievementAmount)}</span>
+                  </p>
+                  <p className="text-purple-300 text-xs mt-1">Tap to view Portfolio</p>
+                </div>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setGameState(prev => ({ ...prev, showAchievementNotification: false }));
+                  }}
+                  className="text-slate-400 hover:text-white transition"
+                  data-testid="button-close-achievement"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* All Achievements Complete Modal */}
+      {gameState.showAllAchievementsComplete && !gameState.showGameWon && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 overflow-hidden">
+          {/* Confetti background */}
+          {[...Array(50)].map((_, i) => (
+            <div
+              key={i}
+              className="confetti-piece"
+              style={{
+                left: `${Math.random() * 100}%`,
+                backgroundColor: ['#a855f7', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'][Math.floor(Math.random() * 6)],
+                animationDelay: `${Math.random() * 1}s`,
+                borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+              }}
+            />
+          ))}
+          
+          <div className="bg-gradient-to-b from-purple-900 via-slate-900 to-slate-900 rounded-2xl p-6 max-w-md w-full border-2 border-purple-500 shadow-2xl relative z-10">
+            <div className="text-center mb-6">
+              <div className="inline-block bg-gradient-to-br from-yellow-400 to-amber-600 p-4 rounded-full mb-4 shadow-lg">
+                <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mb-2">
+                All Achievements Unlocked!
+              </h2>
+              <p className="text-slate-300 text-sm mb-4">
+                You've reached all 8 income milestones. Incredible progress!
+              </p>
+            </div>
+            
+            <div className="bg-slate-800/50 rounded-xl p-4 mb-6 border border-slate-700">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="bg-emerald-500/20 p-2 rounded-lg">
+                  <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-emerald-400 font-bold text-sm">Final Challenge</p>
+                  <p className="text-slate-400 text-xs">Complete your collection to win!</p>
+                </div>
+              </div>
+              <p className="text-slate-200 text-sm leading-relaxed">
+                Purchase <span className="text-purple-400 font-bold">all lifestyle items</span> (homes, cars, yachts, and jets) to achieve <span className="text-amber-400 font-bold">Financial Freedom</span> and win the game!
+              </p>
+              <div className="mt-3 flex items-center justify-between text-xs">
+                <span className="text-slate-400">Items Owned:</span>
+                <span className="text-purple-400 font-bold">{gameState.lifestylePurchases.length} / {ALL_LIFESTYLE_ITEM_IDS.length}</span>
+              </div>
+            </div>
+            
+            <button
+              onClick={() => {
+                setGameState(prev => ({ ...prev, showAllAchievementsComplete: false }));
+                setCurrentPage('lifestyle');
+              }}
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3 rounded-xl font-bold transition shadow-lg"
+              data-testid="button-go-shopping"
+            >
+              Go Shopping
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Game Won Victory Screen */}
+      {gameState.showGameWon && (
+        <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4 overflow-hidden">
+          {/* Celebration confetti */}
+          {[...Array(80)].map((_, i) => (
+            <div
+              key={i}
+              className="confetti-piece"
+              style={{
+                left: `${Math.random() * 100}%`,
+                backgroundColor: ['#ffd700', '#a855f7', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'][Math.floor(Math.random() * 7)],
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${2 + Math.random() * 2}s`,
+                borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+                width: `${8 + Math.random() * 8}px`,
+                height: `${8 + Math.random() * 8}px`,
+              }}
+            />
+          ))}
+          
+          <div className="bg-gradient-to-b from-amber-900/90 via-slate-900 to-slate-900 rounded-2xl p-6 max-w-md w-full border-2 border-amber-500 shadow-2xl relative z-10 my-4">
+            <div className="text-center mb-6">
+              <div className="relative inline-block mb-4">
+                <div className="bg-gradient-to-br from-yellow-300 via-amber-500 to-yellow-600 p-5 rounded-full shadow-lg">
+                  <svg className="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                {/* Sparkle effects */}
+                <div className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-300 rounded-full sparkle" style={{animationDelay: '0s'}} />
+                <div className="absolute -bottom-1 -left-3 w-3 h-3 bg-amber-400 rounded-full sparkle" style={{animationDelay: '0.2s'}} />
+                <div className="absolute top-1/2 -right-4 w-2 h-2 bg-yellow-200 rounded-full sparkle" style={{animationDelay: '0.4s'}} />
+              </div>
+              
+              <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-500 mb-2">
+                FINANCIAL FREEDOM!
+              </h2>
+              <p className="text-amber-200 text-lg font-semibold mb-1">You Won!</p>
+              <p className="text-slate-300 text-sm">
+                You've achieved complete financial independence
+              </p>
+            </div>
+            
+            <div className="bg-slate-800/50 rounded-xl p-4 mb-4 border border-amber-700/50">
+              <h3 className="text-amber-300 font-bold text-center mb-3">Victory Statistics</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 text-sm">Time Played</span>
+                  <span className="text-slate-200 font-bold">{formatGameTime(gameState.dayCount)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 text-sm">Final Balance</span>
+                  <span className="text-emerald-400 font-bold">{formatCurrency(gameState.money)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 text-sm">Total Earned</span>
+                  <span className="text-blue-400 font-bold">{formatCurrency(gameState.totalEarned)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 text-sm">Achievements</span>
+                  <span className="text-purple-400 font-bold">{gameState.achievements.length} / 8</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 text-sm">Items Collected</span>
+                  <span className="text-pink-400 font-bold">{gameState.lifestylePurchases.length} / {ALL_LIFESTYLE_ITEM_IDS.length}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-r from-emerald-900/30 to-teal-900/30 rounded-xl p-4 mb-6 border border-emerald-700/50 text-center">
+              <p className="text-emerald-300 text-sm font-semibold mb-1">
+                Congratulations, Wealth Master!
+              </p>
+              <p className="text-slate-300 text-xs">
+                You've proven that smart financial decisions lead to lasting success.
+              </p>
+            </div>
+            
+            <button
+              onClick={() => {
+                setGameState({
+                  money: 0,
+                  health: 100,
+                  dayCount: 0,
+                  totalEarned: 0,
+                  salary: { timeLeft: 60, unlocked: true },
+                  skill: { purchased: false, cost: 150000, income: 20000, boostLevel: 0, boostCount: 0, lastBoostTime: -20 },
+                  miniBusiness: { purchased: false, cost: 500000, income: 65000, boostLevel: 0, boostCount: 0, lastBoostTime: -20 },
+                  investment: { totalInvested: 0, returns: 0, timeLeft: 0, countdownMonths: 0 },
+                  jobQuit: false,
+                  lifestylePurchases: [],
+                  expensesDebited: false,
+                  showExpenseBreakdown: false,
+                  expenseGlow: false,
+                  lastDeductedAmount: 0,
+                  showHealthBoostModal: false,
+                  showBoostModal: false,
+                  showBusinessBoostModal: false,
+                  showBusinessLockedModal: false,
+                  showBusinessUnlockedNotification: false,
+                  businessUnlockedTime: 0,
+                  goodSleepLastUsed: -300,
+                  goodSleepCountdown: 0,
+                  dailyRewardStreak: 0,
+                  lastDailyRewardDate: null,
+                  showDailyRewardModal: false,
+                  dailyRewardGlow: true,
+                  achievements: [],
+                  showAchievementNotification: false,
+                  achievementAmount: 0,
+                  achievementNotificationTime: 0,
+                  gameOver: false,
+                  finalStats: null,
+                  gamePaused: false,
+                  healthBoostCostMultiplier: 1,
+                  showBannerAd: false,
+                  bannerAdLastShown: -90,
+                  bannerAdShownTime: null,
+                  showInsufficientFundsModal: false,
+                  insufficientFundsMessage: '',
+                  showReversalNotification: false,
+                  reversedItems: [],
+                  reversalTime: 0,
+                  tasksCompleted: { facebook: false, screenshot: false },
+                  showAllAchievementsComplete: false,
+                  allAchievementsShown: false,
+                  showGameWon: false
+                });
+                setCurrentPage('home');
+              }}
+              className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-900 py-4 rounded-xl font-bold text-lg transition shadow-lg"
+              data-testid="button-play-again"
+            >
+              Play Again
+            </button>
+          </div>
+        </div>
+      )}
+
       {gameState.goodSleepCountdown > 0 && (
         <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4">
           <div className="bg-gradient-to-b from-blue-900 to-slate-900 rounded-2xl p-8 max-w-sm w-full border border-blue-700 shadow-2xl text-center">
