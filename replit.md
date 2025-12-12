@@ -33,6 +33,14 @@ Preferred communication style: Simple, everyday language.
 - **Migrations**: Generated via `drizzle-kit push`
 - **Current Storage**: In-memory storage implementation (`MemStorage` class) with interface for easy database swap
 
+### Game Progress Persistence (LocalStorage)
+- **Storage Key**: `naija_wealth_sim_save`
+- **Auto-Save**: Game state is automatically saved to localStorage whenever it changes
+- **Restored on Load**: Saved progress is restored when the player returns to the game
+- **Persisted Data**: Money, health, day count, achievements, lifestyle purchases, skill/business upgrades, investment progress, daily rewards, and game time
+- **Not Persisted**: Modal visibility states, temporary UI flags, and countdown timers (reset on load)
+- **Clear on Restart**: LocalStorage is cleared when player clicks "Play Again" after game over or winning
+
 ### Project Structure
 ```
 ├── client/           # React frontend application

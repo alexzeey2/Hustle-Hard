@@ -81,59 +81,143 @@ interface LifestyleItem {
   duration?: string;
 }
 
+const STORAGE_KEY = 'naija_wealth_sim_save';
+
+const getDefaultGameState = (): GameStateType => ({
+  money: 0,
+  health: 100,
+  dayCount: 0,
+  totalEarned: 0,
+  salary: { timeLeft: 60, unlocked: true },
+  skill: { purchased: false, cost: 150000, income: 20000, boostLevel: 0, boostCount: 0, lastBoostTime: -20 },
+  miniBusiness: { purchased: false, cost: 500000, income: 65000, boostLevel: 0, boostCount: 0, lastBoostTime: -20 },
+  investment: { totalInvested: 0, returns: 0, timeLeft: 0, countdownMonths: 0 },
+  jobQuit: false,
+  lifestylePurchases: [],
+  expensesDebited: false,
+  showExpenseBreakdown: false,
+  expenseGlow: false,
+  lastDeductedAmount: 0,
+  showHealthBoostModal: false,
+  showBoostModal: false,
+  showBusinessBoostModal: false,
+  showBusinessLockedModal: false,
+  showBusinessUnlockedNotification: false,
+  businessUnlockedTime: 0,
+  goodSleepLastUsed: -300,
+  goodSleepCountdown: 0,
+  dailyRewardStreak: 0,
+  lastDailyRewardDate: null,
+  showDailyRewardModal: false,
+  dailyRewardGlow: true,
+  achievements: [],
+  showAchievementNotification: false,
+  achievementAmount: 0,
+  achievementNotificationTime: 0,
+  gameOver: false,
+  finalStats: null,
+  gamePaused: false,
+  healthBoostCostMultiplier: 1,
+  showBannerAd: false,
+  bannerAdLastShown: -90,
+  bannerAdShownTime: null,
+  showInsufficientFundsModal: false,
+  insufficientFundsMessage: '',
+  showReversalNotification: false,
+  reversedItems: [],
+  reversalTime: 0,
+  tasksCompleted: { facebook: false, screenshot: false },
+  showAllAchievementsComplete: false,
+  allAchievementsShown: false,
+  showGameWon: false
+});
+
+const loadSavedGame = (): { gameState: GameStateType; gameTime: number } | null => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.gameState && typeof parsed.gameTime === 'number') {
+        const defaultState = getDefaultGameState();
+        const loadedState: GameStateType = {
+          ...defaultState,
+          ...parsed.gameState,
+          showExpenseBreakdown: false,
+          showHealthBoostModal: false,
+          showBoostModal: false,
+          showBusinessBoostModal: false,
+          showBusinessLockedModal: false,
+          showBusinessUnlockedNotification: false,
+          showDailyRewardModal: false,
+          showAchievementNotification: false,
+          showBannerAd: false,
+          showInsufficientFundsModal: false,
+          showReversalNotification: false,
+          showAllAchievementsComplete: false,
+          showGameWon: false,
+          goodSleepCountdown: 0,
+          insufficientFundsMessage: '',
+          reversedItems: [],
+          gamePaused: false
+        };
+        return { gameState: loadedState, gameTime: parsed.gameTime };
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load saved game:', e);
+  }
+  return null;
+};
+
+const saveGame = (gameState: GameStateType, gameTime: number) => {
+  try {
+    const saveData = {
+      gameState: {
+        money: gameState.money,
+        health: gameState.health,
+        dayCount: gameState.dayCount,
+        totalEarned: gameState.totalEarned,
+        salary: gameState.salary,
+        skill: gameState.skill,
+        miniBusiness: gameState.miniBusiness,
+        investment: gameState.investment,
+        jobQuit: gameState.jobQuit,
+        lifestylePurchases: gameState.lifestylePurchases,
+        expensesDebited: gameState.expensesDebited,
+        lastDeductedAmount: gameState.lastDeductedAmount,
+        goodSleepLastUsed: gameState.goodSleepLastUsed,
+        dailyRewardStreak: gameState.dailyRewardStreak,
+        lastDailyRewardDate: gameState.lastDailyRewardDate,
+        achievements: gameState.achievements,
+        gameOver: gameState.gameOver,
+        finalStats: gameState.finalStats,
+        healthBoostCostMultiplier: gameState.healthBoostCostMultiplier,
+        bannerAdLastShown: gameState.bannerAdLastShown,
+        tasksCompleted: gameState.tasksCompleted,
+        allAchievementsShown: gameState.allAchievementsShown,
+        businessUnlockedTime: gameState.businessUnlockedTime,
+        achievementNotificationTime: gameState.achievementNotificationTime,
+        reversalTime: gameState.reversalTime
+      },
+      gameTime,
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData));
+  } catch (e) {
+    console.error('Failed to save game:', e);
+  }
+};
+
 export default function MoneyGameSim() {
-  const [gameState, setGameState] = useState<GameStateType>({
-    money: 0,
-    health: 100,
-    dayCount: 0,
-    totalEarned: 0,
-    salary: { timeLeft: 60, unlocked: true },
-    skill: { purchased: false, cost: 150000, income: 20000, boostLevel: 0, boostCount: 0, lastBoostTime: -20 },
-    miniBusiness: { purchased: false, cost: 500000, income: 65000, boostLevel: 0, boostCount: 0, lastBoostTime: -20 },
-    investment: { totalInvested: 0, returns: 0, timeLeft: 0, countdownMonths: 0 },
-    jobQuit: false,
-    lifestylePurchases: [],
-    expensesDebited: false,
-    showExpenseBreakdown: false,
-    expenseGlow: false,
-    lastDeductedAmount: 0,
-    showHealthBoostModal: false,
-    showBoostModal: false,
-    showBusinessBoostModal: false,
-    showBusinessLockedModal: false,
-    showBusinessUnlockedNotification: false,
-    businessUnlockedTime: 0,
-    goodSleepLastUsed: -300,
-    goodSleepCountdown: 0,
-    dailyRewardStreak: 0,
-    lastDailyRewardDate: null,
-    showDailyRewardModal: false,
-    dailyRewardGlow: true,
-    achievements: [],
-    showAchievementNotification: false,
-    achievementAmount: 0,
-    achievementNotificationTime: 0,
-    gameOver: false,
-    finalStats: null,
-    gamePaused: false,
-    healthBoostCostMultiplier: 1,
-    showBannerAd: false,
-    bannerAdLastShown: -90,
-    bannerAdShownTime: null,
-    showInsufficientFundsModal: false,
-    insufficientFundsMessage: '',
-    showReversalNotification: false,
-    reversedItems: [],
-    reversalTime: 0,
-    tasksCompleted: { facebook: false, screenshot: false },
-    showAllAchievementsComplete: false,
-    allAchievementsShown: false,
-    showGameWon: false
-  });
+  const savedGame = loadSavedGame();
+  
+  const [gameState, setGameState] = useState<GameStateType>(
+    savedGame?.gameState || getDefaultGameState()
+  );
 
   const [currentPage, setCurrentPage] = useState('home');
   const [activeCategory, setActiveCategory] = useState('home');
-  const [gameTime, setGameTime] = useState(0);
+  const [gameTime, setGameTime] = useState(savedGame?.gameTime || 0);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -298,6 +382,14 @@ export default function MoneyGameSim() {
       }));
     }
   }, [gameState.achievements.length, gameState.lifestylePurchases.length, gameState.allAchievementsShown, gameState.showGameWon]);
+
+  // Auto-save game progress to localStorage
+  useEffect(() => {
+    // Don't save if game is over or won
+    if (!gameState.gameOver && !gameState.showGameWon) {
+      saveGame(gameState, gameTime);
+    }
+  }, [gameState, gameTime]);
 
   const formatCurrency = (amount: number) => {
     return '₦' + amount.toLocaleString('en-US', { maximumFractionDigits: 0 });
@@ -490,54 +582,9 @@ export default function MoneyGameSim() {
     if (!stats) return null;
     
     const handleRestart = () => {
-      setGameState({
-        money: 0,
-        health: 100,
-        dayCount: 0,
-        totalEarned: 0,
-        salary: { timeLeft: 60, unlocked: true },
-        skill: { purchased: false, cost: 150000, income: 20000, boostLevel: 0, boostCount: 0, lastBoostTime: -20 },
-        miniBusiness: { purchased: false, cost: 500000, income: 65000, boostLevel: 0, boostCount: 0, lastBoostTime: -20 },
-        investment: { totalInvested: 0, returns: 0, timeLeft: 0, countdownMonths: 0 },
-        jobQuit: false,
-        lifestylePurchases: [],
-        expensesDebited: false,
-        showExpenseBreakdown: false,
-        expenseGlow: false,
-        lastDeductedAmount: 0,
-        showHealthBoostModal: false,
-        showBoostModal: false,
-        showBusinessBoostModal: false,
-        showBusinessLockedModal: false,
-        showBusinessUnlockedNotification: false,
-        businessUnlockedTime: 0,
-        goodSleepLastUsed: -300,
-        goodSleepCountdown: 0,
-        dailyRewardStreak: 0,
-        lastDailyRewardDate: null,
-        showDailyRewardModal: false,
-        dailyRewardGlow: true,
-        achievements: [],
-        showAchievementNotification: false,
-        achievementAmount: 0,
-        achievementNotificationTime: 0,
-        gameOver: false,
-        finalStats: null,
-        gamePaused: false,
-        healthBoostCostMultiplier: 1,
-        showBannerAd: false,
-        bannerAdLastShown: -90,
-        bannerAdShownTime: null,
-        showInsufficientFundsModal: false,
-        insufficientFundsMessage: '',
-        showReversalNotification: false,
-        reversedItems: [],
-        reversalTime: 0,
-        tasksCompleted: { facebook: false, screenshot: false },
-        showAllAchievementsComplete: false,
-        allAchievementsShown: false,
-        showGameWon: false
-      });
+      localStorage.removeItem(STORAGE_KEY);
+      setGameTime(0);
+      setGameState(getDefaultGameState());
       setCurrentPage('home');
     };
 
@@ -1725,54 +1772,9 @@ export default function MoneyGameSim() {
             
             <button
               onClick={() => {
-                setGameState({
-                  money: 0,
-                  health: 100,
-                  dayCount: 0,
-                  totalEarned: 0,
-                  salary: { timeLeft: 60, unlocked: true },
-                  skill: { purchased: false, cost: 150000, income: 20000, boostLevel: 0, boostCount: 0, lastBoostTime: -20 },
-                  miniBusiness: { purchased: false, cost: 500000, income: 65000, boostLevel: 0, boostCount: 0, lastBoostTime: -20 },
-                  investment: { totalInvested: 0, returns: 0, timeLeft: 0, countdownMonths: 0 },
-                  jobQuit: false,
-                  lifestylePurchases: [],
-                  expensesDebited: false,
-                  showExpenseBreakdown: false,
-                  expenseGlow: false,
-                  lastDeductedAmount: 0,
-                  showHealthBoostModal: false,
-                  showBoostModal: false,
-                  showBusinessBoostModal: false,
-                  showBusinessLockedModal: false,
-                  showBusinessUnlockedNotification: false,
-                  businessUnlockedTime: 0,
-                  goodSleepLastUsed: -300,
-                  goodSleepCountdown: 0,
-                  dailyRewardStreak: 0,
-                  lastDailyRewardDate: null,
-                  showDailyRewardModal: false,
-                  dailyRewardGlow: true,
-                  achievements: [],
-                  showAchievementNotification: false,
-                  achievementAmount: 0,
-                  achievementNotificationTime: 0,
-                  gameOver: false,
-                  finalStats: null,
-                  gamePaused: false,
-                  healthBoostCostMultiplier: 1,
-                  showBannerAd: false,
-                  bannerAdLastShown: -90,
-                  bannerAdShownTime: null,
-                  showInsufficientFundsModal: false,
-                  insufficientFundsMessage: '',
-                  showReversalNotification: false,
-                  reversedItems: [],
-                  reversalTime: 0,
-                  tasksCompleted: { facebook: false, screenshot: false },
-                  showAllAchievementsComplete: false,
-                  allAchievementsShown: false,
-                  showGameWon: false
-                });
+                localStorage.removeItem(STORAGE_KEY);
+                setGameTime(0);
+                setGameState(getDefaultGameState());
                 setCurrentPage('home');
               }}
               className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-900 py-4 rounded-xl font-bold text-lg transition shadow-lg"
