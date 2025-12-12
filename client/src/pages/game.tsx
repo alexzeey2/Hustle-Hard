@@ -50,6 +50,12 @@ interface GameStateType {
   showAllAchievementsComplete: boolean;
   allAchievementsShown: boolean;
   showGameWon: boolean;
+  showTaxNotification: boolean;
+  taxAmount: number;
+  taxNotificationTime: number;
+  lastTaxTime: number;
+  showTaxWarning: boolean;
+  balanceFlashRed: boolean;
 }
 
 interface LifestylePurchase {
@@ -129,7 +135,13 @@ const getDefaultGameState = (): GameStateType => ({
   tasksCompleted: { facebook: false, screenshot: false },
   showAllAchievementsComplete: false,
   allAchievementsShown: false,
-  showGameWon: false
+  showGameWon: false,
+  showTaxNotification: false,
+  taxAmount: 0,
+  taxNotificationTime: 0,
+  lastTaxTime: 0,
+  showTaxWarning: false,
+  balanceFlashRed: false
 });
 
 const loadSavedGame = (): { gameState: GameStateType; gameTime: number } | null => {
@@ -155,6 +167,9 @@ const loadSavedGame = (): { gameState: GameStateType; gameTime: number } | null 
           showReversalNotification: false,
           showAllAchievementsComplete: false,
           showGameWon: false,
+          showTaxNotification: false,
+          showTaxWarning: false,
+          balanceFlashRed: false,
           goodSleepCountdown: 0,
           insufficientFundsMessage: '',
           reversedItems: [],
@@ -197,7 +212,8 @@ const saveGame = (gameState: GameStateType, gameTime: number) => {
         allAchievementsShown: gameState.allAchievementsShown,
         businessUnlockedTime: gameState.businessUnlockedTime,
         achievementNotificationTime: gameState.achievementNotificationTime,
-        reversalTime: gameState.reversalTime
+        reversalTime: gameState.reversalTime,
+        lastTaxTime: gameState.lastTaxTime
       },
       gameTime,
       savedAt: new Date().toISOString()
@@ -339,6 +355,34 @@ export default function MoneyGameSim() {
             newState.showBannerAd = false;
           }
           
+          // Tax system - 15% of balance every 60 seconds when business is unlocked
+          if (prev.jobQuit && newTime - prev.lastTaxTime >= 60 && prev.money > 0) {
+            const taxAmount = Math.floor(prev.money * 0.15);
+            if (taxAmount > 0) {
+              newState.money = newState.money - taxAmount;
+              newState.showTaxNotification = true;
+              newState.taxAmount = taxAmount;
+              newState.taxNotificationTime = newTime;
+              newState.lastTaxTime = newTime;
+              newState.balanceFlashRed = true;
+            }
+          }
+          
+          // Hide tax notification after 4 seconds
+          if (prev.showTaxNotification && prev.taxNotificationTime && newTime - prev.taxNotificationTime >= 4) {
+            newState.showTaxNotification = false;
+          }
+          
+          // Hide balance flash after 1 second
+          if (prev.balanceFlashRed && prev.taxNotificationTime && newTime - prev.taxNotificationTime >= 1) {
+            newState.balanceFlashRed = false;
+          }
+          
+          // Hide tax warning after 8 seconds
+          if (prev.showTaxWarning && prev.businessUnlockedTime && newTime - prev.businessUnlockedTime >= 8) {
+            newState.showTaxWarning = false;
+          }
+          
           return newState;
         });
         
@@ -441,22 +485,33 @@ export default function MoneyGameSim() {
   };
 
   const handleHealthBoost = (type: 'food' | 'exercise' | 'checkup') => {
-    const baseCosts = { food: 25000, exercise: 50000, checkup: 100000 };
-    const basePoints = { food: 3, exercise: 5, checkup: 10 };
-    const actualCost = Math.floor(baseCosts[type] * gameState.healthBoostCostMultiplier);
+    const baseCosts = { food: 50000, exercise: 100000, checkup: 500000 };
+    const basePoints = { food: 5, exercise: 10, checkup: 25 };
+    const costCaps = { food: 500000, exercise: 5000000, checkup: 50000000 };
+    const rawCost = baseCosts[type] * gameState.healthBoostCostMultiplier;
+    const actualCost = Math.min(Math.floor(rawCost), costCaps[type]);
     const points = basePoints[type];
     
     if (gameState.money >= actualCost) {
       const newHealth = Math.min(100, gameState.health + points);
+      const newMultiplier = rawCost >= costCaps[type] 
+        ? gameState.healthBoostCostMultiplier 
+        : gameState.healthBoostCostMultiplier * 1.2;
       setGameState(prev => ({
         ...prev,
         money: prev.money - actualCost,
         health: newHealth,
-        healthBoostCostMultiplier: prev.healthBoostCostMultiplier * 1.2,
+        healthBoostCostMultiplier: newMultiplier,
         showHealthBoostModal: false,
         showHealthWarning: newHealth <= 60
       }));
     }
+  };
+  
+  const getHealthBoostCost = (type: 'food' | 'exercise' | 'checkup') => {
+    const baseCosts = { food: 50000, exercise: 100000, checkup: 500000 };
+    const costCaps = { food: 500000, exercise: 5000000, checkup: 50000000 };
+    return Math.min(Math.floor(baseCosts[type] * gameState.healthBoostCostMultiplier), costCaps[type]);
   };
 
   const canUseGoodSleep = () => gameTime - gameState.goodSleepLastUsed >= 300;
@@ -506,8 +561,8 @@ export default function MoneyGameSim() {
 
   const BalanceHeader = () => (
     <>
-      <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-t-lg px-5 py-4 relative">
-        <p className="text-purple-100 text-xs mb-0.5">Total Balance</p>
+      <div className={`bg-gradient-to-r ${gameState.balanceFlashRed ? 'from-red-600 to-red-700' : 'from-purple-600 to-purple-700'} rounded-t-lg px-5 py-4 relative transition-colors duration-300`}>
+        <p className={`${gameState.balanceFlashRed ? 'text-red-100' : 'text-purple-100'} text-xs mb-0.5`}>Total Balance</p>
         <h2 className="text-3xl font-bold mb-0.5" data-testid="text-balance">{formatCurrency(gameState.money)}</h2>
         <p className="text-purple-100 text-xs" data-testid="text-game-time">{formatGameTime(gameState.dayCount)}</p>
         <button 
@@ -702,7 +757,9 @@ export default function MoneyGameSim() {
         ...prev,
         jobQuit: true,
         showBusinessUnlockedNotification: true,
-        businessUnlockedTime: gameTime
+        businessUnlockedTime: gameTime,
+        showTaxWarning: true,
+        lastTaxTime: gameTime
       }));
     };
 
@@ -1859,9 +1916,9 @@ export default function MoneyGameSim() {
 
               <button 
                 onClick={() => handleHealthBoost('food')}
-                disabled={gameState.money < Math.floor(25000 * gameState.healthBoostCostMultiplier)}
+                disabled={gameState.money < getHealthBoostCost('food')}
                 className={`w-full p-4 rounded-xl font-semibold transition border ${
-                  gameState.money >= Math.floor(25000 * gameState.healthBoostCostMultiplier)
+                  gameState.money >= getHealthBoostCost('food')
                     ? 'bg-slate-700 hover:bg-slate-600 text-white border-slate-600'
                     : 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed'
                 }`}
@@ -1873,17 +1930,17 @@ export default function MoneyGameSim() {
                     <div className="text-xs opacity-70">Nutrition & Vitamins</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-bold">{formatCurrency(Math.floor(25000 * gameState.healthBoostCostMultiplier))}</div>
-                    <div className="text-xs text-emerald-400">+3 Health</div>
+                    <div className="text-lg font-bold">{formatCurrency(getHealthBoostCost('food'))}</div>
+                    <div className="text-xs text-emerald-400">+5 Health</div>
                   </div>
                 </div>
               </button>
               
               <button 
                 onClick={() => handleHealthBoost('exercise')}
-                disabled={gameState.money < Math.floor(50000 * gameState.healthBoostCostMultiplier)}
+                disabled={gameState.money < getHealthBoostCost('exercise')}
                 className={`w-full p-4 rounded-xl font-semibold transition border ${
-                  gameState.money >= Math.floor(50000 * gameState.healthBoostCostMultiplier)
+                  gameState.money >= getHealthBoostCost('exercise')
                     ? 'bg-slate-700 hover:bg-slate-600 text-white border-slate-600'
                     : 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed'
                 }`}
@@ -1891,21 +1948,21 @@ export default function MoneyGameSim() {
               >
                 <div className="flex justify-between items-center">
                   <div className="text-left">
-                    <div className="font-bold">Exercise Routine</div>
+                    <div className="font-bold">Go to Gym</div>
                     <div className="text-xs opacity-70">Fitness & Strength</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-bold">{formatCurrency(Math.floor(50000 * gameState.healthBoostCostMultiplier))}</div>
-                    <div className="text-xs text-emerald-400">+5 Health</div>
+                    <div className="text-lg font-bold">{formatCurrency(getHealthBoostCost('exercise'))}</div>
+                    <div className="text-xs text-emerald-400">+10 Health</div>
                   </div>
                 </div>
               </button>
               
               <button 
                 onClick={() => handleHealthBoost('checkup')}
-                disabled={gameState.money < Math.floor(100000 * gameState.healthBoostCostMultiplier)}
+                disabled={gameState.money < getHealthBoostCost('checkup')}
                 className={`w-full p-4 rounded-xl font-semibold transition border ${
-                  gameState.money >= Math.floor(100000 * gameState.healthBoostCostMultiplier)
+                  gameState.money >= getHealthBoostCost('checkup')
                     ? 'bg-slate-700 hover:bg-slate-600 text-white border-slate-600'
                     : 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed'
                 }`}
@@ -1917,8 +1974,8 @@ export default function MoneyGameSim() {
                     <div className="text-xs opacity-70">Professional Care</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-bold">{formatCurrency(Math.floor(100000 * gameState.healthBoostCostMultiplier))}</div>
-                    <div className="text-xs text-emerald-400">+10 Health</div>
+                    <div className="text-lg font-bold">{formatCurrency(getHealthBoostCost('checkup'))}</div>
+                    <div className="text-xs text-emerald-400">+25 Health</div>
                   </div>
                 </div>
               </button>
@@ -2071,6 +2128,48 @@ export default function MoneyGameSim() {
               <div>
                 <p className="text-white font-bold text-sm">Business Unlocked!</p>
                 <p className="text-emerald-100 text-xs">You can now start a business on the Income page</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {gameState.showTaxWarning && !gameState.gameOver && (
+        <div className="fixed top-36 left-0 right-0 z-50 px-4 animate-slide-up">
+          <div className="bg-gradient-to-r from-amber-600 to-orange-600 rounded-xl p-4 max-w-md mx-auto shadow-2xl border-2 border-white/20">
+            <div className="flex items-start gap-3">
+              <div className="bg-white/20 p-2 rounded-full flex-shrink-0 mt-0.5">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-white font-bold text-sm">Tax Notice</p>
+                <p className="text-amber-100 text-xs leading-relaxed">Government will now tax 15% of your balance every minute. Invest in Fixed Deposit to protect your money from tax!</p>
+              </div>
+              <button 
+                onClick={() => setGameState(prev => ({ ...prev, showTaxWarning: false }))}
+                className="text-amber-200 hover:text-white text-xl leading-none"
+              >
+                x
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {gameState.showTaxNotification && !gameState.gameOver && (
+        <div className="fixed top-20 left-0 right-0 z-50 px-4 animate-slide-up">
+          <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-xl p-4 max-w-md mx-auto shadow-2xl border-2 border-red-400/30">
+            <div className="flex items-center gap-3">
+              <div className="bg-white/20 p-2 rounded-full">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-white font-bold text-sm">Government Tax</p>
+                <p className="text-red-100 text-xs">-{formatCurrency(gameState.taxAmount)} deducted from your balance</p>
               </div>
             </div>
           </div>
