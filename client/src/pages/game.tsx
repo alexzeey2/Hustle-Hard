@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Heart, Home, Briefcase, Sparkles, TrendingUp } from 'lucide-react';
+import lexusImg from '@assets/Lexus_ES_1765647172728.jpg';
+import bmwImg from '@assets/BMW_7_series__1765647172841.jpg';
+import gWagonImg from '@assets/G-Wagon__1765647172883.jpg';
+import bentleyImg from '@assets/Bentley_Continental__1765647172923.jpg';
 
 interface GameStateType {
   money: number;
@@ -1333,10 +1337,10 @@ export default function MoneyGameSim() {
       ],
       car: [
         { id: 'toyota', name: 'Toyota Corolla', price: 15000000, image: '🚗', maintenance: 450000 },
-        { id: 'lexus', name: 'Lexus ES', price: 35000000, image: '🚙', maintenance: 1050000 },
-        { id: 'bmw', name: 'BMW 7 Series', price: 80000000, image: '🚘', maintenance: 2400000 },
-        { id: 'mercedes', name: 'Mercedes G-Wagon', price: 450000000, image: '🚙', maintenance: 13500000 },
-        { id: 'bentley', name: 'Bentley Continental', price: 800000000, image: '🏎️', maintenance: 24000000 }
+        { id: 'lexus', name: 'Lexus ES', price: 35000000, image: lexusImg, maintenance: 1050000 },
+        { id: 'bmw', name: 'BMW 7 Series', price: 80000000, image: bmwImg, maintenance: 2400000 },
+        { id: 'mercedes', name: 'Mercedes G-Wagon', price: 450000000, image: gWagonImg, maintenance: 13500000 },
+        { id: 'bentley', name: 'Bentley Continental', price: 800000000, image: bentleyImg, maintenance: 24000000 }
       ],
       yacht: [
         { id: 'speedboat', name: 'Speedboat', price: 50000000, image: '🚤', maintenance: 1500000 },
@@ -1399,8 +1403,12 @@ export default function MoneyGameSim() {
           {items[activeCategory].map(item => (
             <div key={item.id} className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 shadow-lg" data-testid={`card-item-${item.id}`}>
               <div className="flex flex-col">
-                <div className="w-full h-48 bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center text-7xl border-b border-slate-700">
-                  {item.image}
+                <div className="w-full h-48 bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center border-b border-slate-700 overflow-hidden">
+                  {item.image.startsWith('/') || item.image.startsWith('data:') || item.image.includes('/assets/') ? (
+                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-7xl">{item.image}</span>
+                  )}
                 </div>
                 
                 <div className="p-4">
@@ -2193,7 +2201,13 @@ export default function MoneyGameSim() {
               <div className="bg-slate-900/50 rounded-lg p-4 mb-4 space-y-3">
                 {gameState.reversedItems.map((item, index) => (
                   <div key={index} className="flex items-center gap-3 bg-slate-800/50 p-3 rounded-lg">
-                    <div className="text-3xl">{item.image || '📦'}</div>
+                    <div className="w-12 h-12 flex items-center justify-center">
+                      {item.image && (item.image.startsWith('/') || item.image.startsWith('data:') || item.image.includes('/assets/')) ? (
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover rounded" />
+                      ) : (
+                        <span className="text-3xl">{item.image || '📦'}</span>
+                      )}
+                    </div>
                     <div className="flex-1 text-left">
                       <p className="text-slate-200 font-semibold text-sm">{item.name}</p>
                       <p className="text-orange-400 text-xs">Maintenance: {formatCurrency(item.maintenance)}/month</p>
