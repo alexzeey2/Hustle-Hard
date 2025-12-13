@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Heart, Home, Briefcase, Sparkles, TrendingUp } from 'lucide-react';
+import { Heart, Home, Briefcase, Sparkles, TrendingUp, Calendar } from 'lucide-react';
 import lexusImg from '@assets/Lexus_ES_1765647172728.jpg';
 import bmwImg from '@assets/BMW_7_series__1765647172841.jpg';
 import gWagonImg from '@assets/G-Wagon__1765647172883.jpg';
@@ -13,6 +13,9 @@ import penthouseImg from '@assets/can-ho-penthouse-1~2_1765650064036.jpg';
 interface GameStateType {
   money: number;
   health: number;
+  currentAge: number;
+  maxRetirementAge: number;
+  lastHealthPenaltyAge: number;
   dayCount: number;
   totalEarned: number;
   salary: { timeLeft: number; unlocked: boolean };
@@ -101,6 +104,9 @@ const STORAGE_KEY = 'naija_wealth_sim_save';
 const getDefaultGameState = (): GameStateType => ({
   money: 0,
   health: 100,
+  currentAge: 25,
+  maxRetirementAge: 80,
+  lastHealthPenaltyAge: 25,
   dayCount: 0,
   totalEarned: 0,
   salary: { timeLeft: 60, unlocked: true },
@@ -199,6 +205,9 @@ const saveGame = (gameState: GameStateType, gameTime: number) => {
       gameState: {
         money: gameState.money,
         health: gameState.health,
+        currentAge: gameState.currentAge,
+        maxRetirementAge: gameState.maxRetirementAge,
+        lastHealthPenaltyAge: gameState.lastHealthPenaltyAge,
         dayCount: gameState.dayCount,
         totalEarned: gameState.totalEarned,
         salary: gameState.salary,
@@ -243,6 +252,7 @@ export default function MoneyGameSim() {
   const [currentPage, setCurrentPage] = useState('home');
   const [activeCategory, setActiveCategory] = useState('home');
   const [gameTime, setGameTime] = useState(savedGame?.gameTime || 0);
+  const [showLoadingScreen, setShowLoadingScreen] = useState(!savedGame);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -307,6 +317,30 @@ export default function MoneyGameSim() {
               newState.showHealthWarning = newHealth <= 60;
               newState.health = newHealth;
               newState.dayCount = prev.dayCount + 1;
+              
+              // Age progression: every 12 months = 1 year
+              const newAge = 25 + Math.floor(newState.dayCount / 12);
+              newState.currentAge = Math.min(newAge, prev.maxRetirementAge);
+              
+              // Health penalty: when health drops to 60-50, reduce max retirement age by 2
+              if (newHealth <= 60 && newHealth > 50 && prev.health > 60) {
+                newState.maxRetirementAge = Math.max(newState.currentAge + 1, prev.maxRetirementAge - 2);
+                newState.lastHealthPenaltyAge = newState.currentAge;
+              }
+              
+              // Game over if current age reaches max retirement age
+              if (newState.currentAge >= newState.maxRetirementAge) {
+                newState.gameOver = true;
+                newState.finalStats = {
+                  monthsSurvived: newState.dayCount,
+                  finalBalance: newState.money,
+                  totalEarned: newState.totalEarned,
+                  achievementsUnlocked: newState.achievements.length,
+                  maxHealth: 100,
+                  finalHealth: newHealth
+                };
+                return newState;
+              }
               
               if (newHealth <= 50) {
                 newState.gameOver = true;
@@ -567,6 +601,60 @@ export default function MoneyGameSim() {
       dailyRewardGlow: false
     }));
   };
+
+  useEffect(() => {
+    if (showLoadingScreen) {
+      const timer = setTimeout(() => {
+        setShowLoadingScreen(false);
+      }, 15000);
+      return () => clearTimeout(timer);
+    }
+  }, [showLoadingScreen]);
+
+  const LoadingScreen = () => (
+    <div className="fixed inset-0 bg-gradient-to-b from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center z-50 p-6">
+      <div className="animate-bounce mb-8">
+        <div className="relative">
+          <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl flex items-center justify-center shadow-2xl shadow-purple-500/50">
+            <TrendingUp size={48} className="text-white" />
+          </div>
+          <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center shadow-lg">
+            <Sparkles size={16} className="text-white" />
+          </div>
+        </div>
+      </div>
+      
+      <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-yellow-400 text-transparent bg-clip-text mb-4 text-center tracking-tight">
+        Hustle Hard
+      </h1>
+      
+      <div className="max-w-sm text-center mb-8">
+        <p className="text-purple-200 text-lg leading-relaxed">
+          You're <span className="text-yellow-400 font-bold">25 years old</span> with nothing but ambition.
+        </p>
+        <p className="text-purple-300 text-base mt-2">
+          You have <span className="text-emerald-400 font-bold">55 years</span> to build an empire before retirement at <span className="text-orange-400 font-bold">80</span>.
+        </p>
+      </div>
+      
+      <div className="flex flex-col items-center gap-3">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-purple-400 rounded-full animate-pulse"></div>
+          <div className="w-3 h-3 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+          <div className="w-3 h-3 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+        </div>
+        <p className="text-slate-400 text-sm">Loading your journey...</p>
+      </div>
+      
+      <button 
+        onClick={() => setShowLoadingScreen(false)}
+        className="mt-12 px-8 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition shadow-lg"
+        data-testid="button-skip-intro"
+      >
+        Skip Intro
+      </button>
+    </div>
+  );
 
   const BalanceHeader = () => (
     <>
@@ -1492,11 +1580,37 @@ export default function MoneyGameSim() {
         </button>
       </div>
 
+      <div className="bg-slate-800 rounded-lg p-5 mb-6 border border-slate-700">
+        <div className="flex items-center gap-3 mb-3">
+          <Calendar size={20} className="text-blue-400" />
+          <span className="text-slate-400 text-base">Age</span>
+        </div>
+        <div className="flex items-baseline gap-2 mb-3">
+          <span className="text-4xl font-bold text-slate-200" data-testid="text-current-age">{gameState.currentAge}</span>
+          <span className="text-slate-500 text-lg">/ {gameState.maxRetirementAge}</span>
+        </div>
+        <div className="w-full bg-slate-700 rounded-full h-2 mb-3">
+          <div 
+            className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+            style={{ width: `${((gameState.currentAge - 25) / (gameState.maxRetirementAge - 25)) * 100}%` }}
+          />
+        </div>
+        <p className="text-slate-500 text-xs">
+          {gameState.maxRetirementAge - gameState.currentAge} years until retirement
+        </p>
+        {gameState.maxRetirementAge < 80 && (
+          <p className="text-orange-400 text-xs mt-2">
+            Low health reduced your max age by {80 - gameState.maxRetirementAge} years
+          </p>
+        )}
+      </div>
+
       <div className="bg-slate-800 rounded-lg p-4 border border-slate-700 text-sm text-slate-300 mb-4">
         <p className="mb-3 font-semibold"><span className="text-orange-500">WARNING!!!</span></p>
         <div className="space-y-2 text-slate-400">
           <p>Your health drops by 5 points every month</p>
           <p>If health reaches 50 or below = Game Over!</p>
+          <p>Letting health drop to 60 will reduce your max retirement age!</p>
         </div>
       </div>
 
@@ -2097,6 +2211,8 @@ export default function MoneyGameSim() {
           </div>
         </div>
       )}
+
+      {showLoadingScreen && <LoadingScreen />}
 
       {gameState.showHealthWarning && currentPage !== 'home' && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-bounce">
