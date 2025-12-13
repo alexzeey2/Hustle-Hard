@@ -1,6 +1,7 @@
 {
-  "buildCommand": "cd client && npm install && npx vite build --outDir ../dist",
-  "outputDirectory": "dist",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npx vite build",
+  "outputDirectory": "dist/public",
   "installCommand": "npm install",
   "framework": null,
   "rewrites": [
