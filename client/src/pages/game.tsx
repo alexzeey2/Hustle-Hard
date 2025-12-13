@@ -4,6 +4,11 @@ import lexusImg from '@assets/Lexus_ES_1765647172728.jpg';
 import bmwImg from '@assets/BMW_7_series__1765647172841.jpg';
 import gWagonImg from '@assets/G-Wagon__1765647172883.jpg';
 import bentleyImg from '@assets/Bentley_Continental__1765647172923.jpg';
+import toyotaImg from '@assets/images_(24)_1765648373624.jpeg';
+import bungalowImg from '@assets/images_(23)_1765648373757.jpeg';
+import duplexImg from '@assets/contemporary-4-bedrm-duplex_1765648373794.jpg';
+import mansionImg from '@assets/im-532185_1765648373845.jpeg';
+import penthouseImg from '@assets/can-ho-penthouse-1~2_1765648373881.jpg';
 
 interface GameStateType {
   money: number;
@@ -1330,13 +1335,13 @@ export default function MoneyGameSim() {
 
     const items: Record<string, LifestyleItem[]> = {
       home: [
-        { id: 'bungalow', name: 'Bungalow', price: 25000000, image: '🏠', maintenance: 750000 },
-        { id: 'duplex', name: 'Duplex', price: 80000000, image: '🏘️', maintenance: 2400000 },
-        { id: 'mansion', name: 'Mansion', price: 250000000, image: '🏰', maintenance: 7500000 },
-        { id: 'penthouse', name: 'Penthouse', price: 500000000, image: '🏙️', maintenance: 15000000 }
+        { id: 'bungalow', name: 'Bungalow', price: 25000000, image: bungalowImg, maintenance: 750000 },
+        { id: 'duplex', name: 'Duplex', price: 80000000, image: duplexImg, maintenance: 2400000 },
+        { id: 'mansion', name: 'Mansion', price: 250000000, image: mansionImg, maintenance: 7500000 },
+        { id: 'penthouse', name: 'Penthouse', price: 500000000, image: penthouseImg, maintenance: 15000000 }
       ],
       car: [
-        { id: 'toyota', name: 'Toyota Corolla', price: 15000000, image: '🚗', maintenance: 450000 },
+        { id: 'toyota', name: 'Toyota Corolla', price: 15000000, image: toyotaImg, maintenance: 450000 },
         { id: 'lexus', name: 'Lexus ES', price: 35000000, image: lexusImg, maintenance: 1050000 },
         { id: 'bmw', name: 'BMW 7 Series', price: 80000000, image: bmwImg, maintenance: 2400000 },
         { id: 'mercedes', name: 'Mercedes G-Wagon', price: 450000000, image: gWagonImg, maintenance: 13500000 },
