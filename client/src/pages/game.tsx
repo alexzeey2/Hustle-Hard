@@ -252,7 +252,16 @@ export default function MoneyGameSim() {
   const [currentPage, setCurrentPage] = useState('home');
   const [activeCategory, setActiveCategory] = useState('home');
   const [gameTime, setGameTime] = useState(savedGame?.gameTime || 0);
-  const [showLoadingScreen, setShowLoadingScreen] = useState(!savedGame);
+  const [showLoadingScreen, setShowLoadingScreen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const hasSeenIntro = sessionStorage.getItem('hustle_hard_intro_seen');
+      if (!hasSeenIntro) {
+        sessionStorage.setItem('hustle_hard_intro_seen', 'true');
+        return true;
+      }
+    }
+    return false;
+  });
 
   useEffect(() => {
     const interval = setInterval(() => {
