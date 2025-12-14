@@ -1,0 +1,25 @@
+{
+  "name": "Hustle Hard - Financial Freedom Game",
+  "short_name": "Hustle Hard",
+  "description": "Learn financial freedom through an engaging simulation game. Build income streams, manage expenses, and achieve your financial goals.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#7c3aed",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["games", "finance", "education"]
+}
