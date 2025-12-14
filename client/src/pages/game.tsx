@@ -242,6 +242,22 @@ const saveGame = (gameState: GameStateType, gameTime: number) => {
   }
 };
 
+const playCashierSound = () => {
+  try {
+    const audio = new Audio('/cashier.mp3');
+    audio.volume = 0.5;
+    audio.play().catch(() => {});
+  } catch {}
+};
+
+const playAchievementSound = () => {
+  try {
+    const audio = new Audio('/achievement.mp3');
+    audio.volume = 0.4;
+    audio.play().catch(() => {});
+  } catch {}
+};
+
 export default function MoneyGameSim() {
   const savedGame = loadSavedGame();
   
@@ -315,6 +331,10 @@ export default function MoneyGameSim() {
               newState.lifestylePurchases = finalPurchases;
               newState.totalEarned = prev.totalEarned + totalIncome;
               
+              if (totalIncome > 0) {
+                playCashierSound();
+              }
+              
               if (finalMaintenanceCost > 0) {
                 newState.expensesDebited = true;
                 newState.expenseGlow = true;
@@ -371,6 +391,7 @@ export default function MoneyGameSim() {
                   const totalReturn = prev.investment.totalInvested + prev.investment.returns;
                   newState.money = newState.money + totalReturn;
                   newState.investment = { totalInvested: 0, returns: 0, timeLeft: 0, countdownMonths: 0 };
+                  playCashierSound();
                 }
               }
             }
@@ -655,13 +676,6 @@ export default function MoneyGameSim() {
         <p className="text-slate-400 text-sm">Loading your journey...</p>
       </div>
       
-      <button 
-        onClick={() => setShowLoadingScreen(false)}
-        className="mt-12 px-8 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition shadow-lg"
-        data-testid="button-skip-intro"
-      >
-        Skip Intro
-      </button>
     </div>
   );
 
@@ -1372,6 +1386,9 @@ export default function MoneyGameSim() {
               
               if (justAchieved) {
                 setTimeout(() => {
+                  if (milestone.amount >= 5000000) {
+                    playAchievementSound();
+                  }
                   setGameState(prev => ({
                     ...prev,
                     money: prev.money + milestone.reward,
