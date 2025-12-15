@@ -262,15 +262,17 @@ const playAchievementSound = () => {
 };
 
 export default function MoneyGameSim() {
-  const savedGame = loadSavedGame();
-  
-  const [gameState, setGameState] = useState<GameStateType>(
-    savedGame?.gameState || getDefaultGameState()
-  );
+  const [gameState, setGameState] = useState<GameStateType>(() => {
+    const savedGame = loadSavedGame();
+    return savedGame?.gameState || getDefaultGameState();
+  });
 
   const [currentPage, setCurrentPage] = useState('home');
   const [activeCategory, setActiveCategory] = useState('home');
-  const [gameTime, setGameTime] = useState(savedGame?.gameTime || 0);
+  const [gameTime, setGameTime] = useState(() => {
+    const savedGame = loadSavedGame();
+    return savedGame?.gameTime || 0;
+  });
   const [showLoadingScreen, setShowLoadingScreen] = useState(() => {
     if (typeof window !== 'undefined') {
       const hasSeenIntro = sessionStorage.getItem('hustle_hard_intro_seen');
