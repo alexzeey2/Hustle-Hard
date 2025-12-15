@@ -13,6 +13,10 @@ import speedboatImg from '@assets/speedboat__1765818981054.jpg';
 import smallYachtImg from '@assets/Small_Yartch__1765818981111.jpg';
 import luxuryYachtImg from '@assets/Luxury_Yarcht_1765818981149.jpg';
 import megaYachtImg from '@assets/mega-yacht_1765818981193.jpg';
+import lightJetImg from '@assets/light_jet_1765820694292.jpg';
+import midsizeJetImg from '@assets/Midsize_jet_1765820694339.jpg';
+import heavyJetImg from '@assets/heavy_jet__1765820694376.jpg';
+import privateAirlinerImg from '@assets/private_Airliner__1765820694408.jpg';
 
 interface GameStateType {
   money: number;
@@ -1489,10 +1493,10 @@ export default function MoneyGameSim() {
         { id: 'mega_yacht', name: 'Mega Yacht', price: 5000000000, image: megaYachtImg, maintenance: 150000000 }
       ],
       jet: [
-        { id: 'light_jet', name: 'Light Jet', price: 2000000000, image: '✈️', maintenance: 60000000 },
-        { id: 'midsize_jet', name: 'Midsize Jet', price: 8000000000, image: '🛩️', maintenance: 240000000 },
-        { id: 'heavy_jet', name: 'Heavy Jet', price: 20000000000, image: '✈️', maintenance: 600000000 },
-        { id: 'airliner', name: 'Private Airliner', price: 50000000000, image: '🛫', maintenance: 1500000000 }
+        { id: 'light_jet', name: 'Light Jet', price: 2000000000, image: lightJetImg, maintenance: 60000000 },
+        { id: 'midsize_jet', name: 'Midsize Jet', price: 8000000000, image: midsizeJetImg, maintenance: 240000000 },
+        { id: 'heavy_jet', name: 'Heavy Jet', price: 20000000000, image: heavyJetImg, maintenance: 600000000 },
+        { id: 'airliner', name: 'Private Airliner', price: 50000000000, image: privateAirlinerImg, maintenance: 1500000000 }
       ]
     };
 
