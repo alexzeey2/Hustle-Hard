@@ -9,6 +9,10 @@ import bungalowImg from '@assets/images_(23)_1765650063900.jpeg';
 import duplexImg from '@assets/contemporary-4-bedrm-duplex_1765650063957.jpg';
 import mansionImg from '@assets/im-532185_1765650063994.jpeg';
 import penthouseImg from '@assets/can-ho-penthouse-1~2_1765650064036.jpg';
+import speedboatImg from '@assets/speedboat__1765818981054.jpg';
+import smallYachtImg from '@assets/Small_Yartch__1765818981111.jpg';
+import luxuryYachtImg from '@assets/Luxury_Yarcht_1765818981149.jpg';
+import megaYachtImg from '@assets/mega-yacht_1765818981193.jpg';
 
 interface GameStateType {
   money: number;
@@ -1479,10 +1483,10 @@ export default function MoneyGameSim() {
         { id: 'bentley', name: 'Bentley Continental', price: 800000000, image: bentleyImg, maintenance: 24000000 }
       ],
       yacht: [
-        { id: 'speedboat', name: 'Speedboat', price: 50000000, image: '🚤', maintenance: 1500000 },
-        { id: 'yacht_small', name: 'Small Yacht', price: 200000000, image: '⛵', maintenance: 6000000 },
-        { id: 'yacht_luxury', name: 'Luxury Yacht', price: 1000000000, image: '🛥️', maintenance: 30000000 },
-        { id: 'mega_yacht', name: 'Mega Yacht', price: 5000000000, image: '🚢', maintenance: 150000000 }
+        { id: 'speedboat', name: 'Speedboat', price: 50000000, image: speedboatImg, maintenance: 1500000 },
+        { id: 'yacht_small', name: 'Small Yacht', price: 200000000, image: smallYachtImg, maintenance: 6000000 },
+        { id: 'yacht_luxury', name: 'Luxury Yacht', price: 1000000000, image: luxuryYachtImg, maintenance: 30000000 },
+        { id: 'mega_yacht', name: 'Mega Yacht', price: 5000000000, image: megaYachtImg, maintenance: 150000000 }
       ],
       jet: [
         { id: 'light_jet', name: 'Light Jet', price: 2000000000, image: '✈️', maintenance: 60000000 },
