@@ -548,6 +548,9 @@ export default function MoneyGameSim() {
   );
   const hasWonGame = hasAllAchievements && hasAllItems;
 
+  // Compute daily reward glow based on actual date comparison (not state)
+  const shouldShowDailyRewardGlow = gameState.lastDailyRewardDate !== new Date().toDateString();
+
   const calculateMaintenanceCosts = () => {
     return gameState.lifestylePurchases.reduce((total, purchase) => total + (purchase.maintenance || 0), 0);
   };
@@ -693,7 +696,7 @@ export default function MoneyGameSim() {
         <button 
           onClick={() => setGameState(prev => ({ ...prev, showDailyRewardModal: true }))}
           className={`absolute top-3 right-3 bg-purple-800 hover:bg-purple-900 text-purple-100 px-3 py-1.5 rounded-lg text-xs font-medium transition border border-purple-500/50 ${
-            gameState.dailyRewardGlow ? 'animate-pulse ring-2 ring-yellow-400 ring-offset-2 ring-offset-purple-600' : ''
+            shouldShowDailyRewardGlow ? 'animate-pulse ring-2 ring-yellow-400 ring-offset-2 ring-offset-purple-600' : ''
           }`}
           data-testid="button-daily-reward"
         >
