@@ -166,6 +166,8 @@ const loadSavedGame = (): { gameState: GameStateType; gameTime: number } | null 
       const parsed = JSON.parse(saved);
       if (parsed.gameState && typeof parsed.gameTime === 'number') {
         const defaultState = getDefaultGameState();
+        const today = new Date().toDateString();
+        const alreadyClaimedToday = parsed.gameState.lastDailyRewardDate === today;
         const loadedState: GameStateType = {
           ...defaultState,
           ...parsed.gameState,
@@ -188,7 +190,8 @@ const loadSavedGame = (): { gameState: GameStateType; gameTime: number } | null 
           goodSleepCountdown: 0,
           insufficientFundsMessage: '',
           reversedItems: [],
-          gamePaused: false
+          gamePaused: false,
+          dailyRewardGlow: !alreadyClaimedToday
         };
         return { gameState: loadedState, gameTime: parsed.gameTime };
       }
@@ -394,6 +397,19 @@ export default function MoneyGameSim() {
                   playCashierSound();
                 }
               }
+              
+              // Tax system - 15% of balance every 60 seconds when job is quit (applied AFTER income arrives)
+              if (prev.jobQuit && newTime - prev.lastTaxTime >= 60 && newState.money > 0) {
+                const taxAmount = Math.floor(newState.money * 0.15);
+                if (taxAmount > 0) {
+                  newState.money = newState.money - taxAmount;
+                  newState.showTaxNotification = true;
+                  newState.taxAmount = taxAmount;
+                  newState.taxNotificationTime = newTime;
+                  newState.lastTaxTime = newTime;
+                  newState.balanceFlashRed = true;
+                }
+              }
             }
           }
           
@@ -426,19 +442,6 @@ export default function MoneyGameSim() {
           
           if (prev.showBannerAd && prev.bannerAdShownTime && newTime - prev.bannerAdShownTime >= 6) {
             newState.showBannerAd = false;
-          }
-          
-          // Tax system - 15% of balance every 60 seconds when business is unlocked
-          if (prev.jobQuit && newTime - prev.lastTaxTime >= 60 && prev.money > 0) {
-            const taxAmount = Math.floor(prev.money * 0.15);
-            if (taxAmount > 0) {
-              newState.money = newState.money - taxAmount;
-              newState.showTaxNotification = true;
-              newState.taxAmount = taxAmount;
-              newState.taxNotificationTime = newTime;
-              newState.lastTaxTime = newTime;
-              newState.balanceFlashRed = true;
-            }
           }
           
           // Hide tax notification after 4 seconds
@@ -861,11 +864,21 @@ export default function MoneyGameSim() {
       }
       
       if (gameState.money >= purchase.cost) {
-        setGameState(prev => ({
-          ...prev,
-          money: prev.money - purchase.cost,
-          [purchase.key]: { ...prev[purchase.key], purchased: true }
-        }));
+        if (type === 'miniBusiness') {
+          setGameState(prev => ({
+            ...prev,
+            money: prev.money - purchase.cost,
+            [purchase.key]: { ...prev[purchase.key], purchased: true },
+            showTaxWarning: true,
+            businessUnlockedTime: gameTime
+          }));
+        } else {
+          setGameState(prev => ({
+            ...prev,
+            money: prev.money - purchase.cost,
+            [purchase.key]: { ...prev[purchase.key], purchased: true }
+          }));
+        }
       } else {
         const message = `You need ${formatCurrency(purchase.cost)} to unlock ${purchase.name}. You currently have ${formatCurrency(gameState.money)}.`;
         setGameState(prev => ({ ...prev, showInsufficientFundsModal: true, insufficientFundsMessage: message }));
@@ -878,7 +891,6 @@ export default function MoneyGameSim() {
         jobQuit: true,
         showBusinessUnlockedNotification: true,
         businessUnlockedTime: gameTime,
-        showTaxWarning: true,
         lastTaxTime: gameTime
       }));
     };
