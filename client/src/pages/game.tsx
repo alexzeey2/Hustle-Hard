@@ -1544,7 +1544,7 @@ export default function MoneyGameSim() {
             <div key={item.id} className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 shadow-lg" data-testid={`card-item-${item.id}`}>
               <div className="flex flex-col">
                 <div className="w-full h-48 bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center border-b border-slate-700 overflow-hidden">
-                  {item.image.startsWith('/') || item.image.startsWith('data:') || item.image.includes('/assets/') ? (
+                  {item.image.length > 4 ? (
                     <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-7xl">{item.image}</span>
@@ -2370,7 +2370,7 @@ export default function MoneyGameSim() {
                 {gameState.reversedItems.map((item, index) => (
                   <div key={index} className="flex items-center gap-3 bg-slate-800/50 p-3 rounded-lg">
                     <div className="w-12 h-12 flex items-center justify-center">
-                      {item.image && (item.image.startsWith('/') || item.image.startsWith('data:') || item.image.includes('/assets/')) ? (
+                      {item.image && item.image.length > 4 ? (
                         <img src={item.image} alt={item.name} className="w-full h-full object-cover rounded" />
                       ) : (
                         <span className="text-3xl">{item.image || '📦'}</span>
