@@ -29,6 +29,7 @@ interface GameStateType {
   salary: { timeLeft: number; unlocked: boolean };
   skill: { purchased: boolean; cost: number; income: number; boostLevel: number; boostCount: number; lastBoostTime: number };
   miniBusiness: { purchased: boolean; cost: number; income: number; boostLevel: number; boostCount: number; lastBoostTime: number };
+  bigBusiness: { purchased: boolean; cost: number; income: number; boostLevel: number; boostCount: number; lastBoostTime: number };
   investment: { totalInvested: number; returns: number; timeLeft: number; countdownMonths: number };
   jobQuit: boolean;
   lifestylePurchases: LifestylePurchase[];
@@ -40,6 +41,7 @@ interface GameStateType {
   showHealthBoostModal: boolean;
   showBoostModal: boolean;
   showBusinessBoostModal: boolean;
+  showBigBusinessBoostModal: boolean;
   showBusinessLockedModal: boolean;
   showBusinessUnlockedNotification: boolean;
   businessUnlockedTime: number;
@@ -120,6 +122,7 @@ const getDefaultGameState = (): GameStateType => ({
   salary: { timeLeft: 60, unlocked: true },
   skill: { purchased: false, cost: 150000, income: 20000, boostLevel: 0, boostCount: 0, lastBoostTime: -20 },
   miniBusiness: { purchased: false, cost: 500000, income: 65000, boostLevel: 0, boostCount: 0, lastBoostTime: -20 },
+  bigBusiness: { purchased: false, cost: 50000000, income: 1000000, boostLevel: 0, boostCount: 0, lastBoostTime: -20 },
   investment: { totalInvested: 0, returns: 0, timeLeft: 0, countdownMonths: 0 },
   jobQuit: false,
   lifestylePurchases: [],
@@ -130,6 +133,7 @@ const getDefaultGameState = (): GameStateType => ({
   showHealthBoostModal: false,
   showBoostModal: false,
   showBusinessBoostModal: false,
+  showBigBusinessBoostModal: false,
   showBusinessLockedModal: false,
   showBusinessUnlockedNotification: false,
   businessUnlockedTime: 0,
@@ -183,6 +187,7 @@ const loadSavedGame = (): { gameState: GameStateType; gameTime: number } | null 
           showHealthBoostModal: false,
           showBoostModal: false,
           showBusinessBoostModal: false,
+          showBigBusinessBoostModal: false,
           showBusinessLockedModal: false,
           showBusinessUnlockedNotification: false,
           showDailyRewardModal: false,
@@ -224,6 +229,7 @@ const saveGame = (gameState: GameStateType, gameTime: number) => {
         salary: gameState.salary,
         skill: gameState.skill,
         miniBusiness: gameState.miniBusiness,
+        bigBusiness: gameState.bigBusiness,
         investment: gameState.investment,
         jobQuit: gameState.jobQuit,
         lifestylePurchases: gameState.lifestylePurchases,
@@ -309,7 +315,8 @@ export default function MoneyGameSim() {
               let salaryIncome = prev.jobQuit ? 0 : 50000;
               let skillIncome = prev.skill.purchased ? prev.skill.income : 0;
               let businessIncome = prev.miniBusiness.purchased ? prev.miniBusiness.income : 0;
-              let totalIncome = salaryIncome + skillIncome + businessIncome;
+              let bigBusinessIncome = prev.bigBusiness.purchased ? prev.bigBusiness.income : 0;
+              let totalIncome = salaryIncome + skillIncome + businessIncome + bigBusinessIncome;
               
               const maintenanceCosts = prev.lifestylePurchases.reduce((total, purchase) => total + (purchase.maintenance || 0), 0);
               let currentBalance = prev.money + totalIncome;
@@ -408,8 +415,8 @@ export default function MoneyGameSim() {
                 }
               }
               
-              // Tax system - 15% of balance every 60 seconds when job is quit (applied AFTER income arrives)
-              if (prev.jobQuit && newTime - prev.lastTaxTime >= 60 && newState.money > 0) {
+              // Tax system - 15% of balance every 60 seconds when job is quit AND business is purchased (applied AFTER income arrives)
+              if (prev.jobQuit && prev.miniBusiness.purchased && newTime - prev.lastTaxTime >= 60 && newState.money > 0) {
                 const taxAmount = Math.floor(newState.money * 0.15);
                 if (taxAmount > 0) {
                   newState.money = newState.money - taxAmount;
@@ -520,6 +527,54 @@ export default function MoneyGameSim() {
       saveGame(gameState, gameTime);
     }
   }, [gameState, gameTime]);
+
+  // Global achievement checking - runs when income sources change
+  useEffect(() => {
+    if (gameState.gameOver || gameState.showGameWon) return;
+    
+    let totalMonthlyIncome = gameState.jobQuit ? 0 : 50000;
+    if (gameState.skill.purchased) totalMonthlyIncome += gameState.skill.income;
+    if (gameState.miniBusiness.purchased) totalMonthlyIncome += gameState.miniBusiness.income;
+    if (gameState.bigBusiness.purchased) totalMonthlyIncome += gameState.bigBusiness.income;
+    
+    const achievementMilestones = [
+      { amount: 500000, reward: 25000 },
+      { amount: 5000000, reward: 250000 },
+      { amount: 50000000, reward: 2500000 },
+      { amount: 500000000, reward: 25000000 },
+      { amount: 5000000000, reward: 250000000 },
+      { amount: 50000000000, reward: 2500000000 },
+      { amount: 500000000000, reward: 25000000000 },
+      { amount: 5000000000000, reward: 250000000000 }
+    ];
+    
+    for (const milestone of achievementMilestones) {
+      const achievementKey = `income_${milestone.amount}`;
+      const achieved = totalMonthlyIncome >= milestone.amount;
+      const alreadyHas = gameState.achievements.includes(achievementKey);
+      
+      if (achieved && !alreadyHas) {
+        if (milestone.amount >= 5000000) {
+          playAchievementSound();
+        }
+        setGameState(prev => {
+          // Double-check inside updater to prevent race conditions
+          if (prev.achievements.includes(achievementKey)) {
+            return prev;
+          }
+          return {
+            ...prev,
+            money: prev.money + milestone.reward,
+            achievements: [...prev.achievements, achievementKey],
+            showAchievementNotification: true,
+            achievementAmount: milestone.amount,
+            achievementNotificationTime: gameTime
+          };
+        });
+        break; // Only unlock one achievement at a time
+      }
+    }
+  }, [gameState.skill.income, gameState.miniBusiness.income, gameState.bigBusiness.income, gameState.skill.purchased, gameState.miniBusiness.purchased, gameState.bigBusiness.purchased, gameState.jobQuit, gameState.achievements, gameState.gameOver, gameState.showGameWon]);
 
   const formatCurrency = (amount: number) => {
     return '₦' + amount.toLocaleString('en-US', { maximumFractionDigits: 0 });
@@ -861,8 +916,18 @@ export default function MoneyGameSim() {
       return 0;
     };
     
+    const getBigBusinessCooldownRemaining = () => {
+      const timeSinceLastBoost = gameTime - gameState.bigBusiness.lastBoostTime;
+      const boostsInCycle = gameState.bigBusiness.boostCount % 5;
+      if (boostsInCycle === 0 && gameState.bigBusiness.boostCount > 0 && timeSinceLastBoost < 20) {
+        return 20 - timeSinceLastBoost;
+      }
+      return 0;
+    };
+    
     const skillCooldown = getSkillCooldownRemaining();
     const businessCooldown = getBusinessCooldownRemaining();
+    const bigBusinessCooldown = getBigBusinessCooldownRemaining();
     
     const handlePurchase = (type: 'skill' | 'miniBusiness') => {
       const purchases = {
@@ -991,6 +1056,71 @@ export default function MoneyGameSim() {
           showBusinessBoostModal: false,
           showInsufficientFundsModal: true,
           insufficientFundsMessage: `You need ${formatCurrency(boostCost)} to boost your Business. You currently have ${formatCurrency(gameState.money)}.`
+        }));
+      }
+    };
+
+    const handlePurchaseBigBusiness = () => {
+      if (!gameState.miniBusiness.purchased) {
+        setGameState(prev => ({
+          ...prev,
+          showInsufficientFundsModal: true,
+          insufficientFundsMessage: 'You need to unlock Business first before starting Big Business.'
+        }));
+        return;
+      }
+      
+      const cost = 50000000;
+      if (gameState.money >= cost) {
+        setGameState(prev => ({
+          ...prev,
+          money: prev.money - cost,
+          bigBusiness: { ...prev.bigBusiness, purchased: true }
+        }));
+      } else {
+        setGameState(prev => ({
+          ...prev,
+          showInsufficientFundsModal: true,
+          insufficientFundsMessage: `You need ${formatCurrency(cost)} to start Big Business. You currently have ${formatCurrency(gameState.money)}.`
+        }));
+      }
+    };
+
+    const handleBoostBigBusiness = () => {
+      const boostCost = 50000000;
+      const timeSinceLastBoost = gameTime - gameState.bigBusiness.lastBoostTime;
+      const boostsInCycle = gameState.bigBusiness.boostCount % 5;
+      
+      if (boostsInCycle === 0 && gameState.bigBusiness.boostCount > 0 && timeSinceLastBoost < 20) {
+        const remaining = 20 - timeSinceLastBoost;
+        setGameState(prev => ({
+          ...prev,
+          showBigBusinessBoostModal: false,
+          showInsufficientFundsModal: true,
+          insufficientFundsMessage: `Big Business boost is on cooldown. Please wait ${remaining} more seconds before boosting again.`
+        }));
+        return;
+      }
+      
+      if (gameState.money >= boostCost) {
+        setGameState(prev => ({
+          ...prev,
+          money: prev.money - boostCost,
+          bigBusiness: {
+            ...prev.bigBusiness,
+            income: prev.bigBusiness.income + 1000000,
+            boostLevel: prev.bigBusiness.boostLevel + 1,
+            boostCount: prev.bigBusiness.boostCount + 1,
+            lastBoostTime: gameTime
+          },
+          showBigBusinessBoostModal: false
+        }));
+      } else {
+        setGameState(prev => ({
+          ...prev,
+          showBigBusinessBoostModal: false,
+          showInsufficientFundsModal: true,
+          insufficientFundsMessage: `You need ${formatCurrency(boostCost)} to boost Big Business. You currently have ${formatCurrency(gameState.money)}.`
         }));
       }
     };
@@ -1146,6 +1276,56 @@ export default function MoneyGameSim() {
         </div>
 
         <div className="bg-slate-800 rounded-xl p-5 mb-4 border border-slate-700/50 shadow-lg">
+          <h3 className="font-semibold text-base text-slate-100 mb-1">
+            Big Business
+            {gameState.bigBusiness.boostLevel > 0 && (
+              <span className="text-xs ml-2 bg-amber-600 px-2 py-0.5 rounded-full">Lv {gameState.bigBusiness.boostLevel}</span>
+            )}
+          </h3>
+          <p className="text-emerald-400 font-bold text-lg mb-1">+{formatCurrency(gameState.bigBusiness.income)}</p>
+          <p className="text-slate-400 text-xs mb-4">Every month - Auto-collect</p>
+          {!gameState.bigBusiness.purchased ? (
+            <button
+              onClick={handlePurchaseBigBusiness}
+              className={`w-full py-3 rounded-lg font-medium transition flex items-center justify-between px-4 text-sm border ${
+                !gameState.miniBusiness.purchased 
+                  ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed border-slate-700'
+                  : 'bg-slate-700 hover:bg-slate-600 text-slate-100 border-slate-600/50'
+              }`}
+              data-testid="button-start-big-business"
+            >
+              <span>Start Big Business</span>
+              <span>{formatCurrency(50000000)}</span>
+            </button>
+          ) : (
+            <>
+              {gameState.salary.timeLeft > 0 && (
+                <div className="mb-3 flex items-center gap-3">
+                  <div className="flex-1 bg-slate-700/50 rounded-full h-2">
+                    <div className="bg-amber-500 h-2 rounded-full transition-all duration-1000" style={{width: `${((60 - gameState.salary.timeLeft) / 60) * 100}%`}}></div>
+                  </div>
+                  <div className="bg-slate-700 px-3 py-1 rounded-lg border border-slate-600">
+                    <p className="text-emerald-400 font-mono text-xs font-bold whitespace-nowrap">{formatTime(gameState.salary.timeLeft)}</p>
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={() => setGameState(prev => ({ ...prev, showBigBusinessBoostModal: true }))}
+                disabled={bigBusinessCooldown > 0}
+                className={`w-full py-3 rounded-lg font-medium transition text-sm border ${
+                  bigBusinessCooldown > 0
+                    ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed border-slate-700'
+                    : 'bg-slate-700 hover:bg-slate-600 text-slate-100 border-slate-600'
+                }`}
+                data-testid="button-invest-big-business"
+              >
+                {bigBusinessCooldown > 0 ? `Please Wait (${bigBusinessCooldown}s)` : 'Invest ₦50M'}
+              </button>
+            </>
+          )}
+        </div>
+
+        <div className="bg-slate-800 rounded-xl p-5 mb-4 border border-slate-700/50 shadow-lg">
           <h3 className="font-semibold text-base text-slate-100 mb-1">Fixed Deposit</h3>
           <p className="text-emerald-400 font-bold text-lg mb-1">
             {gameState.investment.countdownMonths > 0 ? (
@@ -1255,6 +1435,38 @@ export default function MoneyGameSim() {
           </div>
         )}
 
+        {gameState.showBigBusinessBoostModal && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-800 rounded-lg p-6 max-w-sm w-full border border-slate-700">
+              <h3 className="text-xl font-bold mb-4">Boost Big Business Income</h3>
+              <p className="text-slate-400 text-sm mb-4">Increase your big business income by ₦1,000,000/month</p>
+              <div className="mb-4">
+                <p className="text-slate-300 text-sm">Current Level: {gameState.bigBusiness.boostLevel}</p>
+                <p className="text-slate-300 text-sm">Current Income: {formatCurrency(gameState.bigBusiness.income)}</p>
+                <p className="text-green-400 text-sm">Next Income: {formatCurrency(gameState.bigBusiness.income + 1000000)}</p>
+                <p className="text-amber-400 font-bold mt-2">Cost: {formatCurrency(50000000)}</p>
+              </div>
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleBoostBigBusiness}
+                  className={`flex-1 py-2 rounded-lg font-semibold transition ${
+                    gameState.money >= 50000000 ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-slate-700 text-slate-500'
+                  }`}
+                  data-testid="button-confirm-boost-big-business"
+                >
+                  Boost
+                </button>
+                <button 
+                  onClick={() => setGameState(prev => ({ ...prev, showBigBusinessBoostModal: false }))}
+                  className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {gameState.showBusinessLockedModal && (
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
             <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl p-6 max-w-sm w-full border border-purple-700 shadow-2xl">
@@ -1309,6 +1521,7 @@ export default function MoneyGameSim() {
     let totalMonthlyIncome = gameState.jobQuit ? 0 : 50000;
     if (gameState.skill.purchased) totalMonthlyIncome += gameState.skill.income;
     if (gameState.miniBusiness.purchased) totalMonthlyIncome += gameState.miniBusiness.income;
+    if (gameState.bigBusiness.purchased) totalMonthlyIncome += gameState.bigBusiness.income;
     
     const achievementMilestones = [
       { amount: 500000, label: '₦500K', reward: 25000 },
@@ -1382,6 +1595,12 @@ export default function MoneyGameSim() {
                 <span className="text-slate-200 font-semibold">{formatCurrency(gameState.miniBusiness.income)}</span>
               </div>
             )}
+            {gameState.bigBusiness.purchased && (
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-slate-400">Big Business</span>
+                <span className="text-slate-200 font-semibold">{formatCurrency(gameState.bigBusiness.income)}</span>
+              </div>
+            )}
           </div>
           
           <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 z-10">
@@ -1406,24 +1625,7 @@ export default function MoneyGameSim() {
           <p className="text-slate-400 text-xs mb-4">Reach income milestones to unlock achievements. Each gives a 5% cash reward.</p>
           <div className="grid grid-cols-2 gap-3">
             {achievementMilestones.map(milestone => {
-              const achieved = totalMonthlyIncome >= milestone.amount;
-              const justAchieved = achieved && !gameState.achievements.includes(`income_${milestone.amount}`);
-              
-              if (justAchieved) {
-                setTimeout(() => {
-                  if (milestone.amount >= 5000000) {
-                    playAchievementSound();
-                  }
-                  setGameState(prev => ({
-                    ...prev,
-                    money: prev.money + milestone.reward,
-                    achievements: [...prev.achievements, `income_${milestone.amount}`],
-                    showAchievementNotification: true,
-                    achievementAmount: milestone.amount,
-                    achievementNotificationTime: gameTime
-                  }));
-                }, 100);
-              }
+              const achieved = gameState.achievements.includes(`income_${milestone.amount}`);
               
               return (
                 <div 
