@@ -183,6 +183,12 @@ const loadSavedGame = (): { gameState: GameStateType; gameTime: number } | null 
         const defaultState = getDefaultGameState();
         const today = new Date().toDateString();
         const alreadyClaimedToday = parsed.gameState.lastDailyRewardDate === today;
+        const savedHealth = parsed.gameState.health ?? 100;
+        const savedThreshold = parsed.gameState.healthPenaltyThreshold;
+        let healthPenaltyThreshold = savedThreshold ?? 60;
+        if (savedThreshold === undefined && savedHealth <= 60) {
+          healthPenaltyThreshold = Math.floor(savedHealth / 5) * 5 - 5;
+        }
         const loadedState: GameStateType = {
           ...defaultState,
           ...parsed.gameState,
@@ -207,7 +213,8 @@ const loadSavedGame = (): { gameState: GameStateType; gameTime: number } | null 
           insufficientFundsMessage: '',
           reversedItems: [],
           gamePaused: false,
-          dailyRewardGlow: !alreadyClaimedToday
+          dailyRewardGlow: !alreadyClaimedToday,
+          healthPenaltyThreshold
         };
         return { gameState: loadedState, gameTime: parsed.gameTime };
       }
@@ -251,7 +258,8 @@ const saveGame = (gameState: GameStateType, gameTime: number) => {
         businessUnlockedTime: gameState.businessUnlockedTime,
         achievementNotificationTime: gameState.achievementNotificationTime,
         reversalTime: gameState.reversalTime,
-        lastTaxTime: gameState.lastTaxTime
+        lastTaxTime: gameState.lastTaxTime,
+        healthPenaltyThreshold: gameState.healthPenaltyThreshold
       },
       gameTime,
       savedAt: new Date().toISOString()
