@@ -392,33 +392,19 @@ export default function MoneyGameSim() {
                 while (newHealth <= threshold && threshold >= 0) {
                   newState.maxRetirementAge = newState.maxRetirementAge - 10;
                   threshold -= 5;
-                  // If remaining years <= 5, end the game
-                  if (newState.maxRetirementAge - newState.currentAge <= 5) {
-                    newState.maxRetirementAge = newState.currentAge;
-                    break;
-                  }
                 }
                 newState.healthPenaltyThreshold = threshold;
                 newState.lastHealthPenaltyAge = newState.currentAge;
               }
               
-              // Life ends if health reaches 0
-              if (newHealth <= 0) {
-                newState.gameOver = true;
-                newState.finalStats = {
-                  monthsSurvived: newState.dayCount,
-                  finalBalance: newState.money,
-                  totalEarned: newState.totalEarned,
-                  achievementsUnlocked: newState.achievements.length,
-                  maxHealth: 100,
-                  finalHealth: 0,
-                  finalAge: newState.currentAge
-                };
-                return newState;
+              // If remaining years < 10, wipe them out and end the game immediately
+              const remainingYears = newState.maxRetirementAge - newState.currentAge;
+              if (remainingYears < 10 && remainingYears > 0) {
+                newState.maxRetirementAge = newState.currentAge;
               }
               
-              // Life ends if current age reaches or exceeds max retirement age
-              if (newState.currentAge >= newState.maxRetirementAge) {
+              // Life ends if health reaches 0 OR remaining years exhausted
+              if (newHealth <= 0 || newState.currentAge >= newState.maxRetirementAge) {
                 newState.gameOver = true;
                 newState.finalStats = {
                   monthsSurvived: newState.dayCount,
