@@ -78,6 +78,7 @@ interface GameStateType {
   lastTaxTime: number;
   showTaxWarning: boolean;
   balanceFlashRed: boolean;
+  healthPenaltyThreshold: number;
 }
 
 interface LifestylePurchase {
@@ -169,7 +170,8 @@ const getDefaultGameState = (): GameStateType => ({
   taxNotificationTime: 0,
   lastTaxTime: 0,
   showTaxWarning: false,
-  balanceFlashRed: false
+  balanceFlashRed: false,
+  healthPenaltyThreshold: 60
 });
 
 const loadSavedGame = (): { gameState: GameStateType; gameTime: number } | null => {
@@ -372,10 +374,34 @@ export default function MoneyGameSim() {
               const newAge = 25 + Math.floor(newState.dayCount / 12);
               newState.currentAge = Math.min(newAge, prev.maxRetirementAge);
               
-              // Health penalty: when health drops to 60 or below, reduce max retirement age by 10
-              if (newHealth <= 60 && prev.health > 60) {
-                newState.maxRetirementAge = Math.max(newState.currentAge + 1, prev.maxRetirementAge - 10);
+              // Health penalty: each 5-point drop below 60 deducts 10 years from lifespan
+              // Reset threshold when health goes above 60
+              if (newHealth > 60) {
+                newState.healthPenaltyThreshold = 60;
+              } else {
+                // Apply penalty for each threshold crossed
+                let threshold = prev.healthPenaltyThreshold;
+                while (newHealth <= threshold && threshold >= 0) {
+                  newState.maxRetirementAge = Math.max(newState.currentAge + 1, newState.maxRetirementAge - 10);
+                  threshold -= 5;
+                }
+                newState.healthPenaltyThreshold = threshold;
                 newState.lastHealthPenaltyAge = newState.currentAge;
+              }
+              
+              // Life ends if health reaches 0
+              if (newHealth <= 0) {
+                newState.gameOver = true;
+                newState.finalStats = {
+                  monthsSurvived: newState.dayCount,
+                  finalBalance: newState.money,
+                  totalEarned: newState.totalEarned,
+                  achievementsUnlocked: newState.achievements.length,
+                  maxHealth: 100,
+                  finalHealth: 0,
+                  finalAge: newState.currentAge
+                };
+                return newState;
               }
               
               // Life ends if current age reaches max retirement age
@@ -1934,8 +1960,8 @@ export default function MoneyGameSim() {
         <p className="mb-3 font-semibold"><span className="text-orange-500">WARNING!!!</span></p>
         <div className="space-y-2 text-slate-400">
           <p>Your health drops by 5 points every month</p>
-          <p>Letting health drop to 60 will reduce your lifespan by 10 years!</p>
-          <p>Keep your health above 60 to live longer!</p>
+          <p>Each 5-point drop below 60 reduces your lifespan by 10 years!</p>
+          <p>If health reaches 0, your life ends immediately!</p>
         </div>
       </div>
 
