@@ -97,6 +97,7 @@ interface FinalStats {
   achievementsUnlocked: number;
   maxHealth: number;
   finalHealth: number;
+  finalAge: number;
 }
 
 interface LifestyleItem {
@@ -371,13 +372,13 @@ export default function MoneyGameSim() {
               const newAge = 25 + Math.floor(newState.dayCount / 12);
               newState.currentAge = Math.min(newAge, prev.maxRetirementAge);
               
-              // Health penalty: when health drops to 60-50, reduce max retirement age by 2
-              if (newHealth <= 60 && newHealth > 50 && prev.health > 60) {
-                newState.maxRetirementAge = Math.max(newState.currentAge + 1, prev.maxRetirementAge - 2);
+              // Health penalty: when health drops to 60 or below, reduce max retirement age by 10
+              if (newHealth <= 60 && prev.health > 60) {
+                newState.maxRetirementAge = Math.max(newState.currentAge + 1, prev.maxRetirementAge - 10);
                 newState.lastHealthPenaltyAge = newState.currentAge;
               }
               
-              // Game over if current age reaches max retirement age
+              // Life ends if current age reaches max retirement age
               if (newState.currentAge >= newState.maxRetirementAge) {
                 newState.gameOver = true;
                 newState.finalStats = {
@@ -386,20 +387,8 @@ export default function MoneyGameSim() {
                   totalEarned: newState.totalEarned,
                   achievementsUnlocked: newState.achievements.length,
                   maxHealth: 100,
-                  finalHealth: newHealth
-                };
-                return newState;
-              }
-              
-              if (newHealth <= 50) {
-                newState.gameOver = true;
-                newState.finalStats = {
-                  monthsSurvived: newState.dayCount,
-                  finalBalance: newState.money,
-                  totalEarned: newState.totalEarned,
-                  achievementsUnlocked: newState.achievements.length,
-                  maxHealth: 100,
-                  finalHealth: newHealth
+                  finalHealth: newHealth,
+                  finalAge: newState.currentAge
                 };
                 return newState;
               }
@@ -834,64 +823,147 @@ export default function MoneyGameSim() {
       setCurrentPage('home');
     };
 
+    const yearsLived = stats.finalAge - 25;
+    
+    const achievementMilestones = [
+      { amount: 500000, label: '500K' },
+      { amount: 5000000, label: '5M' },
+      { amount: 50000000, label: '50M' },
+      { amount: 500000000, label: '500M' },
+      { amount: 5000000000, label: '5B' },
+      { amount: 50000000000, label: '50B' },
+      { amount: 500000000000, label: '500B' },
+      { amount: 5000000000000, label: '5T' }
+    ];
+
+    const getCategoryItems = (category: string) => {
+      return gameState.lifestylePurchases.filter(p => p.category === category);
+    };
+
     return (
       <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4 overflow-y-auto">
-        <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl p-6 max-w-md w-full border border-red-900/50 shadow-2xl relative my-4">
-          <div className="text-center mb-4">
-            <div className="inline-block bg-red-900/30 p-3 rounded-full mb-3">
-              <Heart size={36} className="text-red-500" />
-            </div>
-            <h2 className="text-2xl font-bold text-red-400 mb-1">Game Over</h2>
-            <p className="text-slate-400 text-xs">Your health reached 50 or below</p>
+        <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl p-6 max-w-md w-full border border-amber-700/50 shadow-2xl relative my-4 max-h-[90vh] overflow-y-auto">
+          <div className="text-center mb-6">
+            <p className="text-amber-400 font-mono text-xs tracking-widest mb-2">{'═'.repeat(20)}</p>
+            <h2 className="text-2xl font-bold text-amber-400 mb-1">YOUR LEGACY - AGE {stats.finalAge}</h2>
+            <p className="text-amber-400 font-mono text-xs tracking-widest">{'═'.repeat(20)}</p>
           </div>
 
-          <div className="bg-slate-900/50 rounded-xl p-4 mb-4 border border-slate-700">
-            <h3 className="text-slate-300 font-semibold mb-3 text-center text-sm">Final Statistics</h3>
-            <div className="space-y-2.5">
-              <div className="flex justify-between items-center">
-                <span className="text-slate-400 text-xs">Months Survived</span>
-                <span className="text-slate-100 font-bold" data-testid="text-months-survived">{stats.monthsSurvived}</span>
+          <div className="space-y-4 mb-6">
+            <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-slate-400 text-sm">Years Lived</span>
+                <span className="text-slate-100 font-bold" data-testid="text-years-lived">{yearsLived} years (25 → {stats.finalAge})</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-400 text-xs">Final Balance</span>
-                <span className="text-emerald-400 font-bold text-sm" data-testid="text-final-balance">{formatCurrency(stats.finalBalance)}</span>
+                <span className="text-slate-400 text-sm">Final Net Worth</span>
+                <span className="text-emerald-400 font-bold text-lg" data-testid="text-final-balance">{formatCurrency(stats.finalBalance)}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-400 text-xs">Total Earned</span>
-                <span className="text-blue-400 font-bold text-sm" data-testid="text-total-earned">{formatCurrency(stats.totalEarned)}</span>
+            </div>
+
+            <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+              <h3 className="text-slate-300 font-semibold mb-3 text-sm uppercase tracking-wide">Achievements Unlocked</h3>
+              <div className="space-y-1.5">
+                {achievementMilestones.map(milestone => {
+                  const achieved = gameState.achievements.includes(`income_${milestone.amount}`);
+                  return (
+                    <div key={milestone.amount} className="flex items-center gap-2 text-sm">
+                      <span className={achieved ? 'text-emerald-400' : 'text-red-400'}>
+                        {achieved ? '✓' : '✗'}
+                      </span>
+                      <span className={achieved ? 'text-slate-200' : 'text-slate-500'}>
+                        ₦{milestone.label} Income
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-400 text-xs">Achievements</span>
-                <span className="text-purple-400 font-bold">{stats.achievementsUnlocked}</span>
+            </div>
+
+            <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+              <h3 className="text-slate-300 font-semibold mb-3 text-sm uppercase tracking-wide">Income Streams</h3>
+              <div className="space-y-1.5 text-sm">
+                {gameState.skill.purchased && (
+                  <div className="text-slate-300">
+                    - Skill: Level {gameState.skill.boostLevel} ({formatCurrency(gameState.skill.income)}/month)
+                  </div>
+                )}
+                {gameState.miniBusiness.purchased && (
+                  <div className="text-slate-300">
+                    - Business: Level {gameState.miniBusiness.boostLevel} ({formatCurrency(gameState.miniBusiness.income)}/month)
+                  </div>
+                )}
+                {gameState.bigBusiness.purchased && (
+                  <div className="text-slate-300">
+                    - Big Business: Level {gameState.bigBusiness.boostLevel} ({formatCurrency(gameState.bigBusiness.income)}/month)
+                  </div>
+                )}
+                {!gameState.skill.purchased && !gameState.miniBusiness.purchased && !gameState.bigBusiness.purchased && (
+                  <div className="text-slate-500 italic">No income streams developed</div>
+                )}
               </div>
-              <div className="pt-2 border-t border-slate-700">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400 text-xs">Final Health</span>
-                  <span className="text-red-400 font-bold">{stats.finalHealth}</span>
+            </div>
+
+            <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+              <h3 className="text-slate-300 font-semibold mb-3 text-sm uppercase tracking-wide">Collections</h3>
+              <div className="space-y-3 text-sm">
+                <div>
+                  <p className="text-slate-400 italic mb-1">House</p>
+                  {getCategoryItems('home').length > 0 ? (
+                    getCategoryItems('home').map(item => (
+                      <p key={item.id} className="text-slate-300 pl-2">{item.name}</p>
+                    ))
+                  ) : (
+                    <p className="text-slate-500 pl-2">None</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-slate-400 italic mb-1">Cars</p>
+                  {getCategoryItems('car').length > 0 ? (
+                    getCategoryItems('car').map(item => (
+                      <p key={item.id} className="text-slate-300 pl-2">{item.name}</p>
+                    ))
+                  ) : (
+                    <p className="text-slate-500 pl-2">None</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-slate-400 italic mb-1">Yacht</p>
+                  {getCategoryItems('yacht').length > 0 ? (
+                    getCategoryItems('yacht').map(item => (
+                      <p key={item.id} className="text-slate-300 pl-2">{item.name}</p>
+                    ))
+                  ) : (
+                    <p className="text-slate-500 pl-2">None</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-slate-400 italic mb-1">Jet</p>
+                  {getCategoryItems('jet').length > 0 ? (
+                    getCategoryItems('jet').map(item => (
+                      <p key={item.id} className="text-slate-300 pl-2">{item.name}</p>
+                    ))
+                  ) : (
+                    <p className="text-slate-500 pl-2">None</p>
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-slate-900/30 rounded-lg p-3 mb-4 border border-slate-700/50">
-            <p className="text-slate-300 text-xs text-center">
-              {stats.monthsSurvived < 6 ? "Keep practicing! Focus on maintaining your health." :
-               stats.monthsSurvived < 12 ? "Good effort! Try to boost your health more frequently." :
-               stats.monthsSurvived < 24 ? "Well done! You're getting better at managing resources." :
-               "Impressive run! You've mastered the basics of survival."}
-            </p>
+          <div className="text-center mb-4">
+            <p className="text-amber-400 font-mono text-xs tracking-widest mb-2">{'═'.repeat(20)}</p>
+            <p className="text-slate-300 text-sm font-semibold">Play Again to Beat This Record!</p>
+            <p className="text-amber-400 font-mono text-xs tracking-widest mt-2">{'═'.repeat(20)}</p>
           </div>
 
-          <div className="space-y-2">
-            <button
-              onClick={handleRestart}
-              className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 rounded-xl font-bold transition shadow-lg"
-              data-testid="button-play-again"
-            >
-              Play Again
-            </button>
-            <p className="text-slate-500 text-xs text-center">Challenge yourself to survive longer!</p>
-          </div>
+          <button
+            onClick={handleRestart}
+            className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white py-3 rounded-xl font-bold transition shadow-lg"
+            data-testid="button-play-again"
+          >
+            Play Again
+          </button>
         </div>
       </div>
     );
@@ -1848,12 +1920,12 @@ export default function MoneyGameSim() {
             style={{ width: `${((gameState.currentAge - 25) / (gameState.maxRetirementAge - 25)) * 100}%` }}
           />
         </div>
-        <p className="text-slate-500 text-xs">
-          {gameState.maxRetirementAge - gameState.currentAge} years until retirement
+        <p className="text-red-400 text-xs font-bold animate-pulse" style={{ textShadow: '0 0 10px rgba(239, 68, 68, 0.7), 0 0 20px rgba(239, 68, 68, 0.5)' }}>
+          {gameState.maxRetirementAge - gameState.currentAge} years until your life ends
         </p>
         {gameState.maxRetirementAge < 80 && (
           <p className="text-orange-400 text-xs mt-2">
-            Low health reduced your max age by {80 - gameState.maxRetirementAge} years
+            Low health reduced your lifespan by {80 - gameState.maxRetirementAge} years
           </p>
         )}
       </div>
@@ -1862,8 +1934,8 @@ export default function MoneyGameSim() {
         <p className="mb-3 font-semibold"><span className="text-orange-500">WARNING!!!</span></p>
         <div className="space-y-2 text-slate-400">
           <p>Your health drops by 5 points every month</p>
-          <p>If health reaches 50 or below = Game Over!</p>
-          <p>Letting health drop to 60 will reduce your max retirement age!</p>
+          <p>Letting health drop to 60 will reduce your lifespan by 10 years!</p>
+          <p>Keep your health above 60 to live longer!</p>
         </div>
       </div>
 
