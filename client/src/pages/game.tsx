@@ -397,13 +397,7 @@ export default function MoneyGameSim() {
                 newState.lastHealthPenaltyAge = newState.currentAge;
               }
               
-              // If remaining years < 10, wipe them out and end the game immediately
-              const remainingYears = newState.maxRetirementAge - newState.currentAge;
-              if (remainingYears < 10 && remainingYears > 0) {
-                newState.maxRetirementAge = newState.currentAge;
-              }
-              
-              // Life ends if health reaches 0 OR remaining years exhausted
+              // Life ends if health reaches 0 OR remaining years exhausted (0 or negative)
               if (newHealth <= 0 || newState.currentAge >= newState.maxRetirementAge) {
                 newState.gameOver = true;
                 newState.finalStats = {
