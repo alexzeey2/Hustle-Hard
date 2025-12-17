@@ -849,6 +849,54 @@ export default function MoneyGameSim() {
     };
 
     const yearsLived = stats.finalAge - 25;
+    const yearsEarly = 80 - stats.finalAge;
+    const maxYearsToLive = 55;
+    
+    const getDeathType = () => {
+      if (yearsLived >= 50) {
+        return {
+          title: 'NATURAL DEATH',
+          color: 'text-emerald-400',
+          borderColor: 'border-emerald-700/50',
+          bgGradient: 'from-slate-800 to-emerald-950',
+          ageText: `You lived a full life of ${yearsLived} years`,
+          ageDetail: `Age: ${stats.finalAge} years old`,
+          quote: `You died peacefully, having built a legendary empire and maintained your health throughout your life.`
+        };
+      } else if (yearsLived >= 25) {
+        return {
+          title: 'PREMATURE DEATH',
+          color: 'text-amber-400',
+          borderColor: 'border-amber-700/50',
+          bgGradient: 'from-slate-800 to-amber-950',
+          ageText: `You lived ${yearsLived} years`,
+          ageDetail: `Age: ${stats.finalAge} years old (died ${yearsEarly} years early)`,
+          quote: `Your neglect of health caught up with you. You died before reaching your full potential.`
+        };
+      } else if (yearsLived >= 10) {
+        return {
+          title: 'EARLY DEATH',
+          color: 'text-orange-400',
+          borderColor: 'border-orange-700/50',
+          bgGradient: 'from-slate-800 to-orange-950',
+          ageText: `You lived only ${yearsLived} years`,
+          ageDetail: `Age: ${stats.finalAge} years old (died ${yearsEarly} years early)`,
+          quote: `You prioritized wealth over health and paid the ultimate price. Your empire crumbled with you.`
+        };
+      } else {
+        return {
+          title: 'TRAGIC DEATH',
+          color: 'text-red-400',
+          borderColor: 'border-red-700/50',
+          bgGradient: 'from-slate-800 to-red-950',
+          ageText: `You lived only ${yearsLived} year${yearsLived === 1 ? '' : 's'}`,
+          ageDetail: `Age: ${stats.finalAge} years old (died ${yearsEarly} years early)`,
+          quote: `You completely ignored your health and died before your empire even began. A wasted potential.`
+        };
+      }
+    };
+
+    const deathInfo = getDeathType();
     
     const achievementMilestones = [
       { amount: 500000, label: '500K' },
@@ -867,19 +915,21 @@ export default function MoneyGameSim() {
 
     return (
       <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4 overflow-y-auto">
-        <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl p-6 max-w-md w-full border border-amber-700/50 shadow-2xl relative my-4 max-h-[90vh] overflow-y-auto">
+        <div className={`bg-gradient-to-b ${deathInfo.bgGradient} rounded-2xl p-6 max-w-md w-full ${deathInfo.borderColor} border shadow-2xl relative my-4 max-h-[90vh] overflow-y-auto`}>
           <div className="text-center mb-6">
-            <p className="text-amber-400 font-mono text-xs tracking-widest mb-2">{'═'.repeat(20)}</p>
-            <h2 className="text-2xl font-bold text-amber-400 mb-1">YOUR LEGACY - AGE {stats.finalAge}</h2>
-            <p className="text-amber-400 font-mono text-xs tracking-widest">{'═'.repeat(20)}</p>
+            <p className={`${deathInfo.color} font-mono text-xs tracking-widest mb-2`}>{'═'.repeat(20)}</p>
+            <h2 className={`text-2xl font-bold ${deathInfo.color} mb-1`} data-testid="text-death-type">{deathInfo.title}</h2>
+            <p className={`${deathInfo.color} font-mono text-xs tracking-widest`}>{'═'.repeat(20)}</p>
+          </div>
+
+          <div className="text-center mb-6">
+            <p className="text-slate-200 text-lg font-semibold" data-testid="text-years-lived">{deathInfo.ageText}</p>
+            <p className="text-slate-400 text-sm" data-testid="text-age-detail">{deathInfo.ageDetail}</p>
+            <p className="text-slate-400 italic text-sm mt-4 leading-relaxed px-4">"{deathInfo.quote}"</p>
           </div>
 
           <div className="space-y-4 mb-6">
             <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-slate-400 text-sm">Years Lived</span>
-                <span className="text-slate-100 font-bold" data-testid="text-years-lived">{yearsLived} years (25 → {stats.finalAge})</span>
-              </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-400 text-sm">Final Net Worth</span>
                 <span className="text-emerald-400 font-bold text-lg" data-testid="text-final-balance">{formatCurrency(stats.finalBalance)}</span>
@@ -977,9 +1027,9 @@ export default function MoneyGameSim() {
           </div>
 
           <div className="text-center mb-4">
-            <p className="text-amber-400 font-mono text-xs tracking-widest mb-2">{'═'.repeat(20)}</p>
+            <p className={`${deathInfo.color} font-mono text-xs tracking-widest mb-2`}>{'═'.repeat(20)}</p>
             <p className="text-slate-300 text-sm font-semibold">Play Again to Beat This Record!</p>
-            <p className="text-amber-400 font-mono text-xs tracking-widest mt-2">{'═'.repeat(20)}</p>
+            <p className={`${deathInfo.color} font-mono text-xs tracking-widest mt-2`}>{'═'.repeat(20)}</p>
           </div>
 
           <button
