@@ -68,7 +68,10 @@ interface GameStateType {
   reversedItems: LifestylePurchase[];
   reversalTime: number;
   showHealthWarning?: boolean;
-  tasksCompleted: { facebook: boolean; screenshot: boolean };
+  tasksCompleted: { 
+    whatsappChannel: { clicks: number; completed: boolean };
+    whatsappGroup: { clicks: number; completed: boolean };
+  };
   showAllAchievementsComplete: boolean;
   allAchievementsShown: boolean;
   showGameWon: boolean;
@@ -161,7 +164,10 @@ const getDefaultGameState = (): GameStateType => ({
   showReversalNotification: false,
   reversedItems: [],
   reversalTime: 0,
-  tasksCompleted: { facebook: false, screenshot: false },
+  tasksCompleted: { 
+    whatsappChannel: { clicks: 0, completed: false },
+    whatsappGroup: { clicks: 0, completed: false }
+  },
   showAllAchievementsComplete: false,
   allAchievementsShown: false,
   showGameWon: false,
@@ -681,20 +687,61 @@ export default function MoneyGameSim() {
     }
   };
 
-  const handleCompleteTask = (taskType: 'facebook' | 'screenshot') => {
-    const rewards = { facebook: 50000, screenshot: 50000 };
-    if (!gameState.tasksCompleted[taskType]) {
+  const handleWhatsAppTask = (taskType: 'whatsappChannel' | 'whatsappGroup') => {
+    const task = gameState.tasksCompleted[taskType];
+    if (task.completed) return;
+    
+    const links = {
+      whatsappChannel: 'https://whatsapp.com/channel/0029VbBEVHr7z4kj4rEm8T2K',
+      whatsappGroup: 'https://chat.whatsapp.com/DsjT8MovzzCKotdHyX6rFW?mode=hqrt3'
+    };
+    
+    window.open(links[taskType], '_blank');
+    
+    const newClicks = task.clicks + 1;
+    const requiredClicks = 4;
+    
+    if (newClicks >= requiredClicks) {
       setGameState(prev => ({
         ...prev,
-        money: prev.money + rewards[taskType],
-        tasksCompleted: { ...prev.tasksCompleted, [taskType]: true }
+        money: prev.money + 150000,
+        tasksCompleted: {
+          ...prev.tasksCompleted,
+          [taskType]: { clicks: newClicks, completed: true }
+        }
+      }));
+    } else {
+      setGameState(prev => ({
+        ...prev,
+        tasksCompleted: {
+          ...prev.tasksCompleted,
+          [taskType]: { clicks: newClicks, completed: false }
+        }
       }));
     }
   };
 
+  const getWhatsAppTaskMessage = (taskType: 'whatsappChannel' | 'whatsappGroup') => {
+    const task = gameState.tasksCompleted[taskType];
+    if (task.completed) return 'Completed';
+    if (task.clicks === 0) return taskType === 'whatsappChannel' ? 'Join Channel' : 'Join Group';
+    if (task.clicks === 1) return "We noticed you haven't joined yet";
+    if (task.clicks === 2) return 'Please join to claim reward';
+    if (task.clicks === 3) return 'Verifying... Click again';
+    return 'Claim Reward';
+  };
+
+  const getWhatsAppTaskButtonText = (taskType: 'whatsappChannel' | 'whatsappGroup') => {
+    const task = gameState.tasksCompleted[taskType];
+    if (task.completed) return 'Claimed';
+    if (task.clicks === 0) return taskType === 'whatsappChannel' ? 'Join Channel' : 'Join Group';
+    if (task.clicks < 3) return 'Verify & Claim';
+    return 'Claim Reward';
+  };
+
   const handleClaimDailyReward = () => {
     const today = new Date().toDateString();
-    const dailyRewards = [50000, 100000, 150000, 200000, 250000, 300000, 1000000];
+    const dailyRewards = [200000, 500000, 1000000, 2000000, 5000000, 10000000, 50000000];
     if (gameState.lastDailyRewardDate === today) return;
     
     const yesterday = new Date();
@@ -2018,92 +2065,85 @@ export default function MoneyGameSim() {
         <h3 className="text-lg font-bold text-slate-100 mb-4 px-1">Earn More</h3>
         
         <div className="space-y-3">
-          <div className="bg-gradient-to-br from-blue-900/30 to-slate-800 rounded-xl p-4 border border-blue-700/50">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="bg-blue-500/20 p-3 rounded-lg">
-                <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
+          <div className={`bg-gradient-to-br from-emerald-900/30 to-slate-800 rounded-xl p-4 border ${
+            gameState.tasksCompleted.whatsappChannel.completed ? 'border-slate-700' : 'border-emerald-700/50'
+          }`}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="bg-emerald-500/20 p-2.5 rounded-lg">
+                  <svg className="w-5 h-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-slate-100 font-semibold text-sm">Join WhatsApp Channel</h4>
+                  <p className="text-slate-500 text-xs">Get exclusive updates</p>
+                </div>
               </div>
-              <div className="flex-1">
-                <h4 className="text-slate-100 font-bold text-base mb-1">Refer & Earn</h4>
-                <p className="text-slate-400 text-xs">Invite friends to join Naija Wealth Sim</p>
+              <div className="text-right">
+                <span className="text-emerald-400 font-bold text-sm">+₦150K</span>
+                {gameState.tasksCompleted.whatsappChannel.clicks > 0 && !gameState.tasksCompleted.whatsappChannel.completed && (
+                  <p className="text-xs text-amber-400">{gameState.tasksCompleted.whatsappChannel.clicks}/4</p>
+                )}
               </div>
             </div>
             
-            <div className="bg-slate-900/50 rounded-lg p-3 mb-3 border border-slate-700">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-slate-300 text-sm">You earn</span>
-                <span className="text-emerald-400 font-bold text-lg">₦500,000</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-300 text-sm">Your friend gets</span>
-                <span className="text-blue-400 font-bold text-lg">₦100,000</span>
-              </div>
-            </div>
+            {gameState.tasksCompleted.whatsappChannel.clicks > 0 && !gameState.tasksCompleted.whatsappChannel.completed && (
+              <p className="text-amber-400 text-xs mb-3 text-center">{getWhatsAppTaskMessage('whatsappChannel')}</p>
+            )}
             
-            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition shadow-lg" data-testid="button-share-referral">
-              Share Referral Link
+            <button
+              onClick={() => handleWhatsAppTask('whatsappChannel')}
+              disabled={gameState.tasksCompleted.whatsappChannel.completed}
+              className={`w-full py-2.5 rounded-lg text-sm font-semibold transition ${
+                gameState.tasksCompleted.whatsappChannel.completed
+                  ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+              }`}
+              data-testid="button-join-channel"
+            >
+              {getWhatsAppTaskButtonText('whatsappChannel')}
             </button>
           </div>
 
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-4 border border-slate-700">
+          <div className={`bg-gradient-to-br from-emerald-900/30 to-slate-800 rounded-xl p-4 border ${
+            gameState.tasksCompleted.whatsappGroup.completed ? 'border-slate-700' : 'border-emerald-700/50'
+          }`}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
-                <div className="bg-blue-600/20 p-2.5 rounded-lg">
-                  <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                <div className="bg-emerald-500/20 p-2.5 rounded-lg">
+                  <svg className="w-5 h-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                   </svg>
                 </div>
-                <div>
-                  <h4 className="text-slate-100 font-semibold text-sm">Follow on Facebook</h4>
-                  <p className="text-slate-500 text-xs">Stay updated with us</p>
+                <div className="flex-1">
+                  <h4 className="text-slate-100 font-semibold text-sm">Join WhatsApp Group</h4>
+                  <p className="text-slate-500 text-xs">Connect with other players</p>
                 </div>
               </div>
-              <span className="text-emerald-400 font-bold text-sm">+₦50K</span>
-            </div>
-            
-            <button
-              onClick={() => handleCompleteTask('facebook')}
-              disabled={gameState.tasksCompleted.facebook}
-              className={`w-full py-2.5 rounded-lg text-sm font-semibold transition ${
-                gameState.tasksCompleted.facebook
-                  ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
-              data-testid="button-follow-facebook"
-            >
-              {gameState.tasksCompleted.facebook ? 'Completed' : 'Follow Now'}
-            </button>
-          </div>
-
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-4 border border-slate-700">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <div className="bg-purple-500/20 p-2.5 rounded-lg">
-                  <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="text-slate-100 font-semibold text-sm">Share Your Progress</h4>
-                  <p className="text-slate-500 text-xs">Post a screenshot</p>
-                </div>
+              <div className="text-right">
+                <span className="text-emerald-400 font-bold text-sm">+₦150K</span>
+                {gameState.tasksCompleted.whatsappGroup.clicks > 0 && !gameState.tasksCompleted.whatsappGroup.completed && (
+                  <p className="text-xs text-amber-400">{gameState.tasksCompleted.whatsappGroup.clicks}/4</p>
+                )}
               </div>
-              <span className="text-emerald-400 font-bold text-sm">+₦50K</span>
             </div>
             
+            {gameState.tasksCompleted.whatsappGroup.clicks > 0 && !gameState.tasksCompleted.whatsappGroup.completed && (
+              <p className="text-amber-400 text-xs mb-3 text-center">{getWhatsAppTaskMessage('whatsappGroup')}</p>
+            )}
+            
             <button
-              onClick={() => handleCompleteTask('screenshot')}
-              disabled={gameState.tasksCompleted.screenshot}
+              onClick={() => handleWhatsAppTask('whatsappGroup')}
+              disabled={gameState.tasksCompleted.whatsappGroup.completed}
               className={`w-full py-2.5 rounded-lg text-sm font-semibold transition ${
-                gameState.tasksCompleted.screenshot
+                gameState.tasksCompleted.whatsappGroup.completed
                   ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                  : 'bg-purple-600 hover:bg-purple-700 text-white'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
               }`}
-              data-testid="button-share-progress"
+              data-testid="button-join-group"
             >
-              {gameState.tasksCompleted.screenshot ? 'Completed' : 'Share Now'}
+              {getWhatsAppTaskButtonText('whatsappGroup')}
             </button>
           </div>
         </div>
@@ -2547,13 +2587,13 @@ export default function MoneyGameSim() {
               
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { day: 1, amount: 50000 },
-                  { day: 2, amount: 100000 },
-                  { day: 3, amount: 150000 },
-                  { day: 4, amount: 200000 },
-                  { day: 5, amount: 250000 },
-                  { day: 6, amount: 300000 },
-                  { day: 7, amount: 1000000 }
+                  { day: 1, amount: 200000 },
+                  { day: 2, amount: 500000 },
+                  { day: 3, amount: 1000000 },
+                  { day: 4, amount: 2000000 },
+                  { day: 5, amount: 5000000 },
+                  { day: 6, amount: 10000000 },
+                  { day: 7, amount: 50000000 }
                 ].map((reward) => {
                   const isCurrentDay = gameState.dailyRewardStreak === reward.day - 1 || 
                                       (gameState.dailyRewardStreak === 0 && reward.day === 1);
