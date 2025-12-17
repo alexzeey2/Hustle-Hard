@@ -382,7 +382,7 @@ export default function MoneyGameSim() {
               const newAge = 25 + Math.floor(newState.dayCount / 12);
               newState.currentAge = newAge;
               
-              // Health penalty: each 5-point drop below 60 deducts 10 years from lifespan
+              // Health penalty: each 5-point drop below 60 deducts 22 years from lifespan
               // Reset threshold when health goes above 60
               if (newHealth > 60) {
                 newState.healthPenaltyThreshold = 60;
@@ -390,14 +390,20 @@ export default function MoneyGameSim() {
                 // Apply penalty for each threshold crossed
                 let threshold = prev.healthPenaltyThreshold;
                 while (newHealth <= threshold && threshold >= 0) {
-                  newState.maxRetirementAge = newState.maxRetirementAge - 10;
+                  newState.maxRetirementAge = newState.maxRetirementAge - 22;
                   threshold -= 5;
                 }
                 newState.healthPenaltyThreshold = threshold;
                 newState.lastHealthPenaltyAge = newState.currentAge;
               }
               
-              // Life ends if health reaches 0 OR remaining years exhausted (0 or negative)
+              // If remaining years < 22, wipe them out (counts as a full 22-year deduction)
+              const remainingYears = newState.maxRetirementAge - newState.currentAge;
+              if (remainingYears < 22 && remainingYears > 0) {
+                newState.maxRetirementAge = newState.currentAge;
+              }
+              
+              // Life ends if health reaches 0 OR remaining years exhausted
               if (newHealth <= 0 || newState.currentAge >= newState.maxRetirementAge) {
                 newState.gameOver = true;
                 newState.finalStats = {
