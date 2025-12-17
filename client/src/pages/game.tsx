@@ -2009,7 +2009,7 @@ export default function MoneyGameSim() {
         <p className="mb-3 font-semibold"><span className="text-orange-500">WARNING!!!</span></p>
         <div className="space-y-2 text-slate-400">
           <p>Your health drops by 5 points every month</p>
-          <p>Each 5-point drop below 60 reduces your lifespan by 10 years!</p>
+          <p>Each 5-point drop below 60 reduces your lifespan by 22 years!</p>
           <p>If health reaches 0, your life ends immediately!</p>
         </div>
       </div>
