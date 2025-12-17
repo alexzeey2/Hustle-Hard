@@ -2080,16 +2080,11 @@ export default function MoneyGameSim() {
                   <p className="text-slate-500 text-xs">Get exclusive updates</p>
                 </div>
               </div>
-              <div className="text-right">
-                <span className="text-emerald-400 font-bold text-sm">+₦150K</span>
-                {gameState.tasksCompleted.whatsappChannel.clicks > 0 && !gameState.tasksCompleted.whatsappChannel.completed && (
-                  <p className="text-xs text-amber-400">{gameState.tasksCompleted.whatsappChannel.clicks}/4</p>
-                )}
-              </div>
+              <span className="text-emerald-400 font-bold text-sm">+₦150K</span>
             </div>
             
             {gameState.tasksCompleted.whatsappChannel.clicks > 0 && !gameState.tasksCompleted.whatsappChannel.completed && (
-              <p className="text-amber-400 text-xs mb-3 text-center">{getWhatsAppTaskMessage('whatsappChannel')}</p>
+              <p className="text-amber-400 text-xs mb-3 text-center animate-pulse" style={{ textShadow: '0 0 8px rgba(251, 191, 36, 0.6), 0 0 16px rgba(251, 191, 36, 0.4)' }}>{getWhatsAppTaskMessage('whatsappChannel')}</p>
             )}
             
             <button
@@ -2121,16 +2116,11 @@ export default function MoneyGameSim() {
                   <p className="text-slate-500 text-xs">Connect with other players</p>
                 </div>
               </div>
-              <div className="text-right">
-                <span className="text-emerald-400 font-bold text-sm">+₦150K</span>
-                {gameState.tasksCompleted.whatsappGroup.clicks > 0 && !gameState.tasksCompleted.whatsappGroup.completed && (
-                  <p className="text-xs text-amber-400">{gameState.tasksCompleted.whatsappGroup.clicks}/4</p>
-                )}
-              </div>
+              <span className="text-emerald-400 font-bold text-sm">+₦150K</span>
             </div>
             
             {gameState.tasksCompleted.whatsappGroup.clicks > 0 && !gameState.tasksCompleted.whatsappGroup.completed && (
-              <p className="text-amber-400 text-xs mb-3 text-center">{getWhatsAppTaskMessage('whatsappGroup')}</p>
+              <p className="text-amber-400 text-xs mb-3 text-center animate-pulse" style={{ textShadow: '0 0 8px rgba(251, 191, 36, 0.6), 0 0 16px rgba(251, 191, 36, 0.4)' }}>{getWhatsAppTaskMessage('whatsappGroup')}</p>
             )}
             
             <button
