@@ -961,8 +961,9 @@ export default function MoneyGameSim() {
     };
 
     return (
-      <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4 overflow-y-auto">
-        <div className={`bg-gradient-to-b ${deathInfo.bgGradient} rounded-2xl p-6 max-w-md w-full ${deathInfo.borderColor} border shadow-2xl relative my-4 max-h-[90vh] overflow-y-auto`}>
+      <div className="fixed inset-0 bg-black/95 z-50 overflow-y-auto">
+        <div className="min-h-full flex items-center justify-center p-4 py-8">
+          <div className={`bg-gradient-to-b ${deathInfo.bgGradient} rounded-2xl p-6 max-w-md w-full ${deathInfo.borderColor} border shadow-2xl relative`}>
           <div className="text-center mb-6">
             <p className={`${deathInfo.color} font-mono text-xs tracking-widest mb-2`}>{'═'.repeat(20)}</p>
             <h2 className={`text-2xl font-bold ${deathInfo.color} mb-1`} data-testid="text-death-type">{deathInfo.title}</h2>
@@ -1086,6 +1087,7 @@ export default function MoneyGameSim() {
           >
             Play Again
           </button>
+          </div>
         </div>
       </div>
     );
