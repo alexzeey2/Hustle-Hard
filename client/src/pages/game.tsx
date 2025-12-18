@@ -2065,9 +2065,12 @@ export default function MoneyGameSim() {
         <h3 className="text-lg font-bold text-slate-100 mb-4 px-1">Earn More</h3>
         
         <div className="space-y-3">
-          <div className={`bg-gradient-to-br from-emerald-900/30 to-slate-800 rounded-xl p-4 border ${
-            gameState.tasksCompleted.whatsappChannel.completed ? 'border-slate-700' : 'border-emerald-700/50'
-          }`}>
+          <div 
+            className={`bg-gradient-to-br from-emerald-900/30 to-slate-800 rounded-xl p-4 border ${
+              gameState.tasksCompleted.whatsappChannel.completed ? 'border-slate-700' : 'border-emerald-500/70 animate-pulse'
+            }`}
+            style={!gameState.tasksCompleted.whatsappChannel.completed ? { boxShadow: '0 0 15px rgba(16, 185, 129, 0.4), 0 0 30px rgba(16, 185, 129, 0.2)' } : {}}
+          >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 <div className="bg-emerald-500/20 p-2.5 rounded-lg">
@@ -2101,9 +2104,12 @@ export default function MoneyGameSim() {
             </button>
           </div>
 
-          <div className={`bg-gradient-to-br from-emerald-900/30 to-slate-800 rounded-xl p-4 border ${
-            gameState.tasksCompleted.whatsappGroup.completed ? 'border-slate-700' : 'border-emerald-700/50'
-          }`}>
+          <div 
+            className={`bg-gradient-to-br from-emerald-900/30 to-slate-800 rounded-xl p-4 border ${
+              gameState.tasksCompleted.whatsappGroup.completed ? 'border-slate-700' : 'border-emerald-500/70 animate-pulse'
+            }`}
+            style={!gameState.tasksCompleted.whatsappGroup.completed ? { boxShadow: '0 0 15px rgba(16, 185, 129, 0.4), 0 0 30px rgba(16, 185, 129, 0.2)' } : {}}
+          >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 <div className="bg-emerald-500/20 p-2.5 rounded-lg">
